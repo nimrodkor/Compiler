@@ -15,12 +15,24 @@
 						(lambda (x) (not (equal? (car list) x))) 
 						(cdr list)))))))
 
-(define flatten 
+(define flatten-once-max 
 	(lambda (x)
-;		(display "flatten input: ")(display x) (newline)
-  		(cond ((null? x) '())
-        	((list? x) (append (flatten (car x)) (flatten (cdr x))))
-        	(#t (list x)))))
+		(flatten-helper '() x)))
+
+(define flatten-helper
+	(lambda (flat to-flatten)
+		(if (null? to-flatten)
+			flat
+			(let ((current (car to-flatten)))
+				(cond 
+		  			((and (list? current) (not (null? current))) (flatten-helper (append flat current) (cdr to-flatten)))
+		  			(#t (flatten-helper (append flat (list current)) (cdr to-flatten))))))))
+
+(define completely-flatten
+	(lambda (list)
+		(if (equal? list (flatten-once-max list))
+			list
+			(completely-flatten (flatten-once-max list)))))
 
 (define find-in-const-list
 	(lambda (type const const-list)
@@ -42,6 +54,10 @@
 			((symbol? const) 'T_SYMBOL)
 			((pair? const) 'T_PAIR)
 			(#t 'undef)))))
+
+(define is-last?
+	(lambda (val list)
+		(equal? val (car (reverse list)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -87,18 +103,30 @@
 ;		(display (format "Getting a const from: ~A, number? ~A\n" sexpr (number? sexpr)))
 		(cond 
 			((and (not (integer? sexpr)) (number? sexpr)) (list (numerator sexpr) (denominator sexpr) sexpr))
-			((pair? sexpr) (list (car sexpr) (cdr sexpr) sexpr))
+			((pair? sexpr) (extract-sub-consts-from-pair sexpr))
 		    (#t sexpr))))
+
+(define extract-sub-consts-from-pair
+	(lambda (p)
+		(let 
+			((base-consts (completely-flatten p))
+			(sub-pairs (make-sub-pairs p)))
+			(append base-consts sub-pairs) p)))
+
+(define make-sub-pairs
+	(lambda (p)
+		p))
 
 (define find-consts
 	(lambda (parse-list)
 ;		(display (format "parse-list: ~A\n" parse-list)) (newline)
-		(flatten (map
-			(lambda (sexpr) 
-				(cond
-					((eq? 'const (car sexpr)) (get-consts-from-sexpr (cadr sexpr)))
-				    ((list? parse-list) (find-consts sexpr))))
-			(filter list? parse-list)))))
+		(flatten-once-max 
+			(map
+				(lambda (sexpr) 
+					(cond
+						((eq? 'const (car sexpr)) (get-consts-from-sexpr (cadr sexpr)))
+					    ((list? parse-list) (find-consts sexpr))))
+				(filter list? parse-list)))))
 
 (define get-address
 	(let ((address -1))
@@ -120,10 +148,10 @@
 				((const (car const-list))
 				(const-label 
 				(cond 
-					((eq? const (void))
-						(list (get-address) 'T_VOID 0))
 					((null? const) 
 						(list (get-address) 'T_NIL 0))
+					((eq? const (void))
+						(list (get-address) 'T_VOID void))
     				((integer? const)
     					(list (get-address) 'T_INTEGER const))
     				((number? const)
@@ -145,6 +173,7 @@
 
 (define make-const-table
 	(lambda (parsed-code)
+		(display (format "Result of flatten: ~A\n" (find-consts parsed-code)))
 		(create-const-list
 			(remove-duplicates
 				(append
@@ -180,6 +209,35 @@
 	dq MAKE_LITERAL_PAIR(const_~A, const_~A)
 " (car const-record) place-of-car place-of-cdr))))
 
+(define find-vector-vals-places
+	(lambda (vals-list const-list)
+		(map
+			(lambda (val)
+				(cond 
+					((integer? val) (find-in-const-list 'T_INTEGER val const-list))
+					(#t (begin (display (format "the val ~A is not yet supported for assembly declaration" val)) #f))))
+			vals-list)))
+
+(define create-vector-creation-args
+	(lambda (val-places)
+		(fold-left
+			string-append
+			" "
+			(map
+				(lambda (place) 
+					(if (is-last? place val-places)
+						(format "const_~A" place)
+						(format "const_~A, " place)))
+				val-places))))
+
+(define convert-vector-to-assembly
+	(lambda (const-record const-list)
+		(let ((vals-places (find-vector-vals-places (cddr const-record) const-list)))
+			(string-append
+				(format "const_~A:\n    dq MAKE_LITERAL_VECTOR" (car const-record))
+				(create-vector-creation-args vals-places)
+				"\n"))))
+
 (define extract-const-table
 	(lambda (const-table)
 		(string-append
@@ -197,6 +255,7 @@
 									(convert-const-record-to-assembly const-record))
 							    ((equal? 'T_FRACTION type) (convert-fraction-to-assembly const-record const-table))
 							    ((equal? 'T_PAIR type) (convert-pair-to-assembly const-record const-table))
+							    ((equal? 'T_VECTOR type) (convert-vector-to-assembly const-record const-table))
 								(#t 
 									(display (format "extract-cons-table: The const type ~A is not yet supported for creation\n" type))))))
 					const-table))

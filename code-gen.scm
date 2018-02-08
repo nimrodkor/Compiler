@@ -26,7 +26,7 @@
 
 (define code-gen-helper
 	(lambda (code constants-table)
-;		(display (format "code: ~A" code)) (newline)
+		(display (format "code: ~A" code)) (newline)
 		(cond ((equal? (car code) 'const) (code-gen-const (cadr code) constants-table))
 		      (#t (display (format "Code of type ~A is not yet supported" (car code)))))))
 
