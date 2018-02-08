@@ -29,6 +29,20 @@
 				(car const-record)
 				(find-in-const-list type const (cdr const-list))))))
 
+(define get-const-type
+	(lambda (const)
+		(cond 
+			((eq? const (void)) 'T_VOID)
+			((null? const) 'T_NIL)
+			((integer? const) 'T_INTEGER)
+			((number? const) 'T_FRACTION)
+			((or (eq? #f const) (eq? #t const) 'T_BOOL)
+			((char? const) 'T_CHAR)
+			((string? const) 'T_STRING)
+			((symbol? const) 'T_SYMBOL)
+			((pair? const) 'T_PAIR)
+			(#t 'undef)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
@@ -74,9 +88,7 @@
 		(cond 
 			((and (not (integer? sexpr)) (number? sexpr)) (list (numerator sexpr) (denominator sexpr) sexpr))
 			((pair? sexpr) (list (car sexpr) (cdr sexpr) sexpr))
-		    (#t 
-;		    	(display "returning the whole expr\n ") 
-		    	sexpr))))
+		    (#t sexpr))))
 
 (define find-consts
 	(lambda (parse-list)
@@ -96,7 +108,7 @@
 
 (define create-const-list
 	(lambda (const-list)
-		(display (format "Set of consts: ~A" const-list))
+;		(display (format "Set of consts: ~A\n" const-list))
 		(create-const-list-helper const-list)))
 
 (define create-const-list-helper
@@ -159,10 +171,10 @@
 
 (define convert-pair-to-assembly
 	(lambda (const-record const-list)
-;		(display (format "Converting fraction ~A" const-record))
+;		(display (format "Converting pair ~A" const-record))
 		(let 
-			((place-of-car (find-in-const-list 'T_INTEGER (caddr const-record) const-list))
-			(place-of-cdr (find-in-const-list 'T_INTEGER (cadddr const-record) const-list)))
+			((place-of-car (find-in-const-list (get-const-type (caddr const-record)) (caddr const-record) const-list))
+			(place-of-cdr (find-in-const-list (get-const-type (cadddr const-record)) (cadddr const-record) const-list)))
 		(format
 "const_~A:
 	dq MAKE_LITERAL_PAIR(const_~A, const_~A)
