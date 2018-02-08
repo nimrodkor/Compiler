@@ -1,7 +1,9 @@
 (define find-in-list
 	(lambda (x in-list)
+;		(display (format "looking for ~A in ~A\n" x in-list))
 		(ormap
 			(lambda (const-record)
+;				(display (format "comparing ~A with ~A\n" x const-record))
 				(cond 
 					((eq? (void) x) 0)
 					((eq? '() x) 1)
@@ -17,16 +19,16 @@
 (define find-type-in-list
 	(lambda (type const list)
 		(if (or (null? list) (not (list? list)))
-			(begin (display (format "const ~A not found in const-list\n\n" const)) 0)
+			(begin (display (format "const ~A not found in const-list\n" const)) 0)
 			(let ((current-node (car list)))
-;				(display (format "current-node: ~A\n" (cddr current-node)))
+;				(display (format "current-node: ~A\n" current-node))
 				(if (and (eq? type (cadr current-node)) (equal? const (cddr current-node)))
 					(car current-node)
 					(find-type-in-list type const (cdr list)))))))
 
 (define code-gen-helper
 	(lambda (code constants-table)
-		(display (format "code: ~A" code)) (newline)
+;		(display (format "code: ~A" code)) (newline)
 		(cond ((equal? (car code) 'const) (code-gen-const (cadr code) constants-table))
 		      (#t (display (format "Code of type ~A is not yet supported" (car code)))))))
 
@@ -40,7 +42,7 @@
 				(map
 					(lambda (code-part) (string-append 
 											(code-gen-helper code-part constants-table)
-											"    call write_sob_if_not_void\nadd rsp, 1*8\n"))
+											"    call write_sob_if_not_void\n    add rsp, 1*8\n"))
 					scheme-code))
 			)))
 

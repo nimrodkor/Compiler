@@ -23,10 +23,14 @@
 	(lambda (flat to-flatten)
 		(if (null? to-flatten)
 			flat
-			(let ((current (car to-flatten)))
-				(cond 
-		  			((and (list? current) (not (null? current))) (flatten-helper (append flat current) (cdr to-flatten)))
-		  			(#t (flatten-helper (append flat (list current)) (cdr to-flatten))))))))
+			(if (not (list? to-flatten))
+				(if (pair? to-flatten)
+					(append flat (list (car to-flatten)) (list (cdr to-flatten)))
+					(append flat (list to-flatten)))
+				(let ((current (car to-flatten)))
+					(cond 
+			  			((and (list? current) (not (null? current))) (flatten-helper (append flat current) (cdr to-flatten)))
+			  			(#t (flatten-helper (append flat (list current)) (cdr to-flatten)))))))))
 
 (define completely-flatten
 	(lambda (list)
@@ -36,6 +40,7 @@
 
 (define find-in-const-list
 	(lambda (type const const-list)
+;		(display (format "looking for ~A of type ~A in ~A\n" const type const-list))
 		(let ((const-record (car const-list)))
 			(if (and (equal? type (cadr const-record)) (equal? const (caddr const-record)))
 				(car const-record)
@@ -103,19 +108,18 @@
 ;		(display (format "Getting a const from: ~A, number? ~A\n" sexpr (number? sexpr)))
 		(cond 
 			((and (not (integer? sexpr)) (number? sexpr)) (list (numerator sexpr) (denominator sexpr) sexpr))
-			((pair? sexpr) (extract-sub-consts-from-pair sexpr))
+			((pair? sexpr) (append (extract-sub-consts-from-pair sexpr) (list sexpr)))
 		    (#t sexpr))))
 
 (define extract-sub-consts-from-pair
-	(lambda (p)
-		(let 
-			((base-consts (completely-flatten p))
-			(sub-pairs (make-sub-pairs p)))
-			(append base-consts sub-pairs) p)))
+	(lambda (p) 
+		(append 
+			(completely-flatten p)
+			(get-sub-pairs p))))
 
-(define make-sub-pairs
+(define get-sub-pairs
 	(lambda (p)
-		p))
+		(list p)))
 
 (define find-consts
 	(lambda (parse-list)
@@ -149,9 +153,9 @@
 				(const-label 
 				(cond 
 					((null? const) 
-						(list (get-address) 'T_NIL 0))
+						(list (get-address) 'T_NIL '()))
 					((eq? const (void))
-						(list (get-address) 'T_VOID void))
+						(list (get-address) 'T_VOID 0))
     				((integer? const)
     					(list (get-address) 'T_INTEGER const))
     				((number? const)
@@ -173,7 +177,7 @@
 
 (define make-const-table
 	(lambda (parsed-code)
-		(display (format "Result of flatten: ~A\n" (find-consts parsed-code)))
+;		(display (format "Result of flatten: ~A\n" (find-consts parsed-code)))
 		(create-const-list
 			(remove-duplicates
 				(append
@@ -284,11 +288,12 @@ main:
 			(constants-table (make-const-table parsed-scheme-code))
 			(symbol-table (filter (lambda (x) #t) constants-table))
 			(global-variable-table 'undef))
-			(display (format "constants-table: ~A" constants-table)) (newline)
+;			(display (format "constants-table: ~A" constants-table)) (newline)
 			(write-to-file out-file
 				(string-append 
 					prolog 
 					(extract-const-table constants-table)
 					(code-gen parsed-scheme-code constants-table)
 					epilog
-					)))))
+					))
+			)))
