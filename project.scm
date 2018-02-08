@@ -38,27 +38,39 @@
 			list
 			(completely-flatten (flatten-once-max list)))))
 
+(define get-value-of-const
+	(lambda (const-record)
+		(let ((raw-value (cddr const-record))
+			(type (cadr const-record)))
+			(if (eq? type 'T_PAIR)
+				(cons (car raw-value) (cadr raw-value))
+				(car raw-value)))))
+
 (define find-in-const-list
 	(lambda (type const const-list)
 ;		(display (format "looking for ~A of type ~A in ~A\n" const type const-list))
-		(let ((const-record (car const-list)))
-			(if (and (equal? type (cadr const-record)) (equal? const (caddr const-record)))
-				(car const-record)
-				(find-in-const-list type const (cdr const-list))))))
+		(if (null? const-list)
+			(begin (display (format "Did not find the const ~A in the list\n" const)) #f)
+			(let ((const-record (car const-list)))
+;				(display (format "Comparing ~A with ~A\n" const const-record))
+				(if (and (equal? type (cadr const-record)) (equal? const (get-value-of-const const-record)))
+					(car const-record)
+					(find-in-const-list type const (cdr const-list)))))))
 
 (define get-const-type
 	(lambda (const)
+;		(display (format "Finding the type of ~A\n" const))
 		(cond 
 			((eq? const (void)) 'T_VOID)
 			((null? const) 'T_NIL)
 			((integer? const) 'T_INTEGER)
 			((number? const) 'T_FRACTION)
-			((or (eq? #f const) (eq? #t const) 'T_BOOL)
+			((or (eq? #f const) (eq? #t const)) 'T_BOOL)
 			((char? const) 'T_CHAR)
 			((string? const) 'T_STRING)
 			((symbol? const) 'T_SYMBOL)
 			((pair? const) 'T_PAIR)
-			(#t 'undef)))))
+			(#t 'undef))))
 
 (define is-last?
 	(lambda (val list)
@@ -113,13 +125,18 @@
 
 (define extract-sub-consts-from-pair
 	(lambda (p) 
+;		(display (format "The sub pairs: ~A\n" (get-sub-pairs p)))
 		(append 
 			(completely-flatten p)
 			(get-sub-pairs p))))
 
 (define get-sub-pairs
 	(lambda (p)
-		(list p)))
+		(letrec ((head-sub-pairs (if (pair? (car p)) (get-sub-pairs (car p)) (list (car p)))))
+;		(display (format "Getting sub pairs of ~A, head-sub-pairs: ~A\n" p head-sub-pairs))
+		(if (and (not (null? (cdr p))) (list? (cdr p)))
+			(append (get-sub-pairs (cdr p)) head-sub-pairs (list (cons (car p) (cdr p))))
+			(append head-sub-pairs (list p))))))
 
 (define find-consts
 	(lambda (parse-list)
@@ -204,7 +221,7 @@
 
 (define convert-pair-to-assembly
 	(lambda (const-record const-list)
-;		(display (format "Converting pair ~A" const-record))
+;		(display (format "Converting pair ~A\n" const-record))
 		(let 
 			((place-of-car (find-in-const-list (get-const-type (caddr const-record)) (caddr const-record) const-list))
 			(place-of-cdr (find-in-const-list (get-const-type (cadddr const-record)) (cadddr const-record) const-list)))
@@ -288,7 +305,7 @@ main:
 			(constants-table (make-const-table parsed-scheme-code))
 			(symbol-table (filter (lambda (x) #t) constants-table))
 			(global-variable-table 'undef))
-;			(display (format "constants-table: ~A" constants-table)) (newline)
+			(display (format "Constants table: ~A\n" constants-table))
 			(write-to-file out-file
 				(string-append 
 					prolog 

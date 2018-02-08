@@ -34,7 +34,7 @@
 
 (define code-gen
 	(lambda (scheme-code constants-table)
-		(string-append
+		(let ((res (string-append
 			code-header
 			(fold-right
 				string-append
@@ -45,6 +45,8 @@
 											"    call write_sob_if_not_void\n    add rsp, 1*8\n"))
 					scheme-code))
 			)))
+;			(display res)
+			res)))
 
 (define code-gen-const
 	(lambda (const constants-table)
