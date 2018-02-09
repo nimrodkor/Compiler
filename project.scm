@@ -40,6 +40,10 @@
 			list
 			(completely-flatten (flatten-once-max list)))))
 
+(define convert-ascii-list-to-string
+	(lambda (ascii-list)
+		(list->string (map integer->char ascii-list))))
+
 (define get-value-of-const
 	(lambda (const-record)
 		(let ((raw-value (cddr const-record))
@@ -47,6 +51,7 @@
 			(cond 
 				((eq? type 'T_PAIR) (cons (car raw-value) (cadr raw-value)))
 				((eq? type 'T_VECTOR) (list->vector raw-value))
+				((eq? type 'T_STRING) (convert-ascii-list-to-string raw-value))
 				(#t  (car raw-value)))
 			)))
 
@@ -202,7 +207,7 @@
     				((char? const)
     					(list (get-address) 'T_CHAR (char->integer const)))
     				((string? const)
-    					(list (get-address) 'T_STRING const))
+    					(append (list (get-address)) (list 'T_STRING) (convert-string-to-ascii-list const)))
     				((symbol? const)
     					(list (get-address) 'T_SYMBOL const))
     				((pair? const)
@@ -211,6 +216,12 @@
     					(append (list (get-address)) (list 'T_VECTOR) (vector->list const)))	
 					(#t 'undef))))
 				(cons const-label (create-const-list-helper (cdr const-list)))))))
+
+(define convert-string-to-ascii-list
+	(lambda (str)
+		(map
+			char->integer
+			(string->list str))))
 
 (define make-const-table
 	(lambda (parsed-code)
@@ -258,20 +269,14 @@
 					((integer? val) (find-in-const-list 'T_INTEGER val const-list))
 					((pair? val) (find-in-const-list 'T_PAIR val const-list))
 					((vector? val) (find-in-const-list 'T_VECTOR val const-list))
+					((string? val) (find-in-const-list 'T_STRING val const-list))
 					(#t (begin (display (format "the val ~A is not yet supported for assembly declaration" val)) #f))))
 			vals-list)))
 
 (define create-vector-creation-args
 	(lambda (val-places)
-		(fold-left
-			string-append
-			" "
-			(map
-				(lambda (place) 
-					(if (is-last? place val-places)
-						(format "const_~A" place)
-						(format "const_~A, " place)))
-				val-places))))
+		(let ((format-string (fold-left string-append " " (map (lambda (place) (format "const_~A, " place)) val-places))))
+			(substring format-string 0 (- (string-length format-string) 2)))))
 
 (define convert-vector-to-assembly
 	(lambda (const-record const-list)
@@ -280,6 +285,17 @@
 				(format "const_~A:\n    MAKE_LITERAL_VECTOR" (car const-record))
 				(create-vector-creation-args vals-places)
 				"\n"))))
+
+(define create-string-creation-args
+	(lambda (ascii-list)
+		(let ((format-string (fold-left string-append " " (map (lambda (ascii) (format "~A, " ascii)) ascii-list))))
+			(substring format-string 0 (- (string-length format-string) 2)))))
+
+(define convert-string-to-assembly
+	(lambda (const-record const-list)
+		(format "const_~A:\n    MAKE_LITERAL_STRING~A\n" 
+			(car const-record) 
+			(create-string-creation-args (cddr const-record)))))
 
 (define extract-const-table
 	(lambda (const-table)
@@ -299,6 +315,7 @@
 							    ((equal? 'T_FRACTION type) (convert-fraction-to-assembly const-record const-table))
 							    ((equal? 'T_PAIR type) (convert-pair-to-assembly const-record const-table))
 							    ((equal? 'T_VECTOR type) (convert-vector-to-assembly const-record const-table))
+							    ((equal? 'T_STRING type) (convert-string-to-assembly const-record const-table))
 								(#t 
 									(display (format "extract-cons-table: The const type ~A is not yet supported for creation\n" type))))))
 					const-table))
