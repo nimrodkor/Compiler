@@ -74,6 +74,7 @@
 			((string? const) 'T_STRING)
 			((symbol? const) 'T_SYMBOL)
 			((pair? const) 'T_PAIR)
+			((vector? const) 'T_VECTOR)
 			(#t 'undef))))
 
 (define is-last?
@@ -134,14 +135,17 @@
 	(lambda (vec)
 		(flatten-once-max
 			(map
-			get-consts-from-sexpr
-			(vector->list vec)))))
+				get-consts-from-sexpr
+				(vector->list vec)))))
 
 (define extract-sub-consts-from-pair
 	(lambda (p) 
 ;		(display (format "The sub pairs: ~A\n" (get-sub-pairs p)))
 		(append 
-			(completely-flatten p)
+			(flatten-once-max 
+				(map
+					get-consts-from-sexpr
+					(completely-flatten p)))
 			(get-sub-pairs p))))
 
 (define get-sub-pairs
@@ -252,6 +256,7 @@
 			(lambda (val)
 				(cond 
 					((integer? val) (find-in-const-list 'T_INTEGER val const-list))
+					((pair? val) (find-in-const-list 'T_PAIR val const-list))
 					((vector? val) (find-in-const-list 'T_VECTOR val const-list))
 					(#t (begin (display (format "the val ~A is not yet supported for assembly declaration" val)) #f))))
 			vals-list)))
