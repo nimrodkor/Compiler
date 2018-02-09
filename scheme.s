@@ -1,7 +1,5 @@
 ;;; scheme.s
 ;;; Support for the Scheme compiler
-;;; 
-;;; Programmer: Mayer Goldberg, 2018
 
 %define T_UNDEFINED 0
 %define T_VOID 1
@@ -580,10 +578,6 @@ write_sob_fraction:
 	ret
 
 section .data
-.open_paren:
-	db "(", 0
-.close_paren:
-	db ")", 0
 .frac_div:
 	db "/", 0
 

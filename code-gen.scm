@@ -13,6 +13,7 @@
 					((number? x) (find-type-in-list 'T_FRACTION (list (numerator x) (denominator x)) in-list))
 					((char? x) (find-type-in-list 'T_CHAR (list (char->integer x)) in-list))
 					((pair? x) (find-type-in-list 'T_PAIR (list (car x) (cdr x)) in-list))
+					((vector? x) (find-type-in-list 'T_VECTOR (vector->list x) in-list))
 					(#t (begin (display (format "code-gen: need to support ~A\n" x)) #f))))
 			in-list)))
 

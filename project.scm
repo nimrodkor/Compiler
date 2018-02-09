@@ -2,6 +2,7 @@
 (load "tag-parser.scm")
 (load "semantic-analyzer.scm")
 (load "code-gen.scm")
+
 ;;;;;;;;;;;;;;;;;; Util methods ;;;;;;;;;;;;;;;;
 
 (define remove-duplicates
@@ -30,6 +31,7 @@
 				(let ((current (car to-flatten)))
 					(cond 
 			  			((and (list? current) (not (null? current))) (flatten-helper (append flat current) (cdr to-flatten)))
+			  			((pair? current) (flatten-helper (append flat (flatten-helper '() (car current)) (flatten-helper '() (cdr current))) (cdr to-flatten)))
 			  			(#t (flatten-helper (append flat (list current)) (cdr to-flatten)))))))))
 
 (define completely-flatten
@@ -42,15 +44,17 @@
 	(lambda (const-record)
 		(let ((raw-value (cddr const-record))
 			(type (cadr const-record)))
-			(if (eq? type 'T_PAIR)
-				(cons (car raw-value) (cadr raw-value))
-				(car raw-value)))))
+			(cond 
+				((eq? type 'T_PAIR) (cons (car raw-value) (cadr raw-value)))
+				((eq? type 'T_VECTOR) (list->vector raw-value))
+				(#t  (car raw-value)))
+			)))
 
 (define find-in-const-list
 	(lambda (type const const-list)
 ;		(display (format "looking for ~A of type ~A in ~A\n" const type const-list))
 		(if (null? const-list)
-			(begin (display (format "Did not find the const ~A in the list\n" const)) #f)
+			(begin (display (format "Did not find the const ~A of type ~A in the list\n" const type)) #f)
 			(let ((const-record (car const-list)))
 ;				(display (format "Comparing ~A with ~A\n" const const-record))
 				(if (and (equal? type (cadr const-record)) (equal? const (get-value-of-const const-record)))
@@ -101,6 +105,8 @@
 			(close-output-port out-port))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pipeline
 	(lambda (s)
@@ -117,11 +123,19 @@
 
 (define get-consts-from-sexpr
 	(lambda (sexpr)
-;		(display (format "Getting a const from: ~A, number? ~A\n" sexpr (number? sexpr)))
+;		(display (format "Getting a const from: ~A\n" sexpr))
 		(cond 
 			((and (not (integer? sexpr)) (number? sexpr)) (list (numerator sexpr) (denominator sexpr) sexpr))
 			((pair? sexpr) (append (extract-sub-consts-from-pair sexpr) (list sexpr)))
+			((vector? sexpr) (append (extract-sub-consts-from-vector sexpr) (list sexpr)))
 		    (#t sexpr))))
+
+(define extract-sub-consts-from-vector
+	(lambda (vec)
+		(flatten-once-max
+			(map
+			get-consts-from-sexpr
+			(vector->list vec)))))
 
 (define extract-sub-consts-from-pair
 	(lambda (p) 
@@ -189,6 +203,8 @@
     					(list (get-address) 'T_SYMBOL const))
     				((pair? const)
     					(list (get-address) 'T_PAIR (car const) (cdr const)))
+    				((vector? const)
+    					(append (list (get-address)) (list 'T_VECTOR) (vector->list const)))	
 					(#t 'undef))))
 				(cons const-label (create-const-list-helper (cdr const-list)))))))
 
@@ -236,6 +252,7 @@
 			(lambda (val)
 				(cond 
 					((integer? val) (find-in-const-list 'T_INTEGER val const-list))
+					((vector? val) (find-in-const-list 'T_VECTOR val const-list))
 					(#t (begin (display (format "the val ~A is not yet supported for assembly declaration" val)) #f))))
 			vals-list)))
 
@@ -255,7 +272,7 @@
 	(lambda (const-record const-list)
 		(let ((vals-places (find-vector-vals-places (cddr const-record) const-list)))
 			(string-append
-				(format "const_~A:\n    dq MAKE_LITERAL_VECTOR" (car const-record))
+				(format "const_~A:\n    MAKE_LITERAL_VECTOR" (car const-record))
 				(create-vector-creation-args vals-places)
 				"\n"))))
 
