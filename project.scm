@@ -331,7 +331,7 @@
     ret
 ")
 
-(define code-header "extern exit, printf, scanf
+(define code-header "extern exit, printf, scanf, malloc
 global main, write_sob, write_sob_if_not_void
 section .text
 main:

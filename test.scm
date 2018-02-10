@@ -21,4 +21,5 @@
 '("hi" . 2)
 "Nimrod"
 #("hi" "there" "Nati!")
-(lambda-simple (x) x)
+(lambda (x) 4 5 6 7 8 9)
+(lambda (y z) (lambda (a) 66))
