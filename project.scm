@@ -331,12 +331,6 @@
     ret
 ")
 
-(define code-header "extern exit, printf, scanf, malloc
-global main, write_sob, write_sob_if_not_void
-section .text
-main:
-")
-
 (define compile-scheme-file
 	(lambda (in-file out-file)
 		(let* 
@@ -344,7 +338,8 @@ main:
 			(constants-table (make-const-table parsed-scheme-code))
 			(symbol-table (filter (lambda (x) #t) constants-table))
 			(global-variable-table 'undef))
-			(display (format "Constants table: ~A\n" constants-table))
+;			(display (format "Constants table: ~A\n" constants-table))
+;			(display (format "Parsed code: ~A" parsed-scheme-code))
 			(write-to-file out-file
 				(string-append 
 					prolog 
