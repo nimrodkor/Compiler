@@ -50,6 +50,7 @@ main:
 				(code-gen-set-bvar code constants-table env-depth))
 			((equal? (car code) 'seq) (code-gen-seq code constants-table env-depth))
 			((equal? (car code) 'applic) (code-gen-applic code constants-table env-depth))
+			((equal? (car code) 'tc-applic) (code-gen-applic code constants-table env-depth))
 		    (#t (display (format "Code of type ~A is not yet supported" (car code)))))))
 
 (define code-gen
@@ -149,14 +150,15 @@ main:
 (define code-gen-lambda-opt
 	(lambda (lam constants-table env-depth)
 		(let 
-			((params (append (cadr lam) (list (caddr lam))))
+			((params-list (append (cadr lam) (list (caddr lam))))
 			(lambda-index (get-lambda-index))
-			(body (cadddr lam)))
+			(body (cdddr lam)))
 			(string-append
 				(make-env params-list lambda-index env-depth)
 				(string-append
 					(format "B_~A:\n" lambda-index) 
 					"    push rbp\n    mov rbp, rsp\n")
+				(fix-empty-variadic-var (length params-list) lambda-index)
 				(fold-left 
 					string-append 
 					""
@@ -226,6 +228,20 @@ e_loop_~A:
 "
 		index index env-depth index index)))
 
+(define fix-empty-variadic-var
+	(lambda (num-of-params index)
+		(format "
+	mov r8, qword [rbp + 3*8]
+	cmp r8, ~A
+	jge N_F_~A
+
+	inc r8
+	mov qword [rbp + 3*8], r8
+	push SOB_NIL
+
+N_F_~A:
+" num-of-params index index)))
+
 (define make-closure
 	(lambda (index)
 		(format "
@@ -249,9 +265,8 @@ CL_~A:
 
 	mov rbx, rax			; apply the closure
 	CLOSURE_ENV rbx
-	push rbx
 	CLOSURE_CODE rax
-	call rax
+	push rbx
 ")
 
 (define code-gen-applic
@@ -263,7 +278,7 @@ CL_~A:
 				(code-gen-applic-params params-list const-table env-depth)
 				(code-gen-helper proc const-table env-depth)
 				apply-proc
-				(format "    add rsp,~A*8\n" (+ 2 (length params-list)))))))
+				(format "    call rax\n    add rsp,~A*8\n" (+ 2 (length params-list)))))))
 
 (define code-gen-applic-params
 	(lambda (params-list const-table env-depth)
@@ -276,3 +291,29 @@ CL_~A:
 					(lambda (param)
 						(string-append (code-gen-helper param const-table env-depth) "    push rax\n"))
 					(reverse params-list))))))
+
+(define code-gen-tc-applic
+	(lambda (app const-table env-depth)
+		(let 
+			((params-list (caddr app))
+			(proc (cadr app)))
+			(string-append
+				(code-gen-applic-params params-list const-table env-depth)
+				(code-gen-helper proc const-table env-depth)
+				apply-proc
+				(fix-stack (length params-list))
+				(format "    add rsp,~A*8\n" (+ 1 (length params-list)))))))
+
+(define fix-stack
+	(lambda (num-of-params)
+		(format "
+	mov r8, rbp
+	mov r9, rsp
+	leave
+	mov rsp, r9
+
+	mov r9, r8
+	add r9, 8 * (~A + 4)
+	mov r10, 
+
+	" num-of-params)))

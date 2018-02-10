@@ -170,7 +170,7 @@
 					(cond
 						((eq? 'const (car sexpr)) (get-consts-from-sexpr (cadr sexpr)))
 					    ((list? parse-list) (find-consts sexpr))))
-				(filter list? parse-list)))))
+				(filter (lambda (x) (and (list? x) (not (null? x)))) parse-list)))))
 
 (define get-address
 	(let ((address -1))

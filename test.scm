@@ -30,3 +30,6 @@
 ((lambda () "Nimrod"))
 
 ((lambda () ((lambda (x) (set! x 4) x) '(2 16))))
+(lambda x x)
+((lambda x 2))
+((lambda x x) "Shati")
