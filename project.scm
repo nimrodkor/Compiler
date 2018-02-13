@@ -2,6 +2,7 @@
 (load "tag-parser.scm")
 (load "semantic-analyzer.scm")
 (load "code-gen.scm")
+(load "runtime-support.scm")
 
 ;;;;;;;;;;;;;;;;;; Util methods ;;;;;;;;;;;;;;;;
 
@@ -334,10 +335,13 @@
 (define compile-scheme-file
 	(lambda (in-file out-file)
 		(let* 
-			((parsed-scheme-code (pipeline (read-from-file in-file)))
+			((parsed-scheme-code 
+				(pipeline 
+					(append (string->list get-scheme-impls)
+						(read-from-file in-file))))
 			(constants-table (make-const-table parsed-scheme-code))
 			(symbol-table (filter (lambda (x) #t) constants-table))
-			(global-variable-table (make-global-variable-table parsed-scheme-code)))
+			(global-variable-table (make-global-variable-table '() (extract-fvars-from-code parsed-scheme-code))))
 ;			(display (format "Constants table: ~A\n" constants-table))
 ;			(display (format "Parsed code: ~A\n" parsed-scheme-code))
 ;			(display (format "G-V-T: ~A\n" global-variable-table))
@@ -358,18 +362,29 @@
 			fvar-address)))
 
 (define make-global-variable-table
+	(lambda (formatted-list fvar-list)
+		(if (null? fvar-list)
+			formatted-list
+			(make-global-variable-table 
+				(append formatted-list (list (list (get-fvar-address) (car fvar-list)))) 
+				(cdr fvar-list)))))
+
+(define extract-fvars-from-code
 	(lambda (code)
-		(map
-			(lambda (fvar-exp) (list (get-fvar-address) (cadadr fvar-exp)))
-			(filter 
-				(lambda (x) (and (list? x) (not (null? x)) (eq? 'define (car x)))) 
-				code))))
+		(remove-duplicates 
+			(append
+				(list 'not 'car 'cdr 'char? 'integer? 'null? 'number? 'pair? 'procedure?)
+				(map cadadr
+					(filter 
+						(lambda (x) (and (list? x) (not (null? x)) (eq? 'define (car x))))
+						code))))))
 
 (define extract-fvar-table
 	(lambda (fvar-list)
+		(display (format "fvar-list: ~A\n" fvar-list))
 		(fold-right
 			string-append
-			""
+			"\n"
 			(map
 				(lambda (x) 
 					(format "fvar_~A:\n    dq 0\n" (car x)))

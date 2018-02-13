@@ -75,6 +75,7 @@ main:
 		(set! fvars global-variable-table)
 		(string-append
 			code-header
+			(get-runtime-assembly-functions)
 			(fold-right
 				string-append
 				""
@@ -255,7 +256,7 @@ main:
 		(format "	mov rax, 0
 p_~A:
 	cmp	rax, ~A 						; loading params in current lambda (n)
-	je e_~A
+	je  e_~A
 	mov r10, rax
 	add rax, 4
 	sal rax, 3
@@ -277,7 +278,7 @@ e_~A:
 	mov rax, 0
 e_loop_~A:	
 	cmp rax, ~A ; setting up env extension (m)
-	je CL_~A
+	je  CL_~A
 
 	mov r10, rax
 	add rax, 1
@@ -341,7 +342,7 @@ CL_~A:
 				(code-gen-applic-params params-list const-table env-depth)
 				(code-gen-helper proc const-table env-depth)
 				apply-proc
-				(format "    call rax\n    add rsp,~A*8\n" (+ 2 (length params-list)))))))
+				(format "    call rax\n    add rsp, ~A*8\n" (+ 2 (length params-list)))))))
 
 (define code-gen-applic-params
 	(lambda (params-list const-table env-depth)

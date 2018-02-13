@@ -1,6 +1,7 @@
+(define y (lambda (x) x))
 (define x 123)
-(define y "Hi")
-x
+y
+(y 3)
 (if #f x y)
 2
 5
@@ -26,7 +27,6 @@ x
 '("hi" . 2)
 "Nimrod"
 #("hi" "there" "Nati!")
-(lambda (x) 4 5 6 7 8 9)
 (lambda (y z) (lambda (a) 66))
 (begin 3 4 5)
 ((lambda (x y) 2) 3 4)
@@ -43,4 +43,23 @@ x
 
 (if #t "True" "False")
 (if #f "True" "False")
-x
+((lambda (x) x) #f)
+not
+(not #f)
+(not 3)
+car
+cdr
+(car '(1 . 2))
+(cdr '(1 . 2))
+(char? #\a)
+(char? 1)
+(not (char? 1))
+(integer? 2)
+(integer? 1/3)
+(number? 1/3)
+(number? #\a)
+'(1 . 2)
+(pair? '(1 . 2))
+(pair? #f)
+(procedure? not)
+(define pair-example '(1 . 2))
