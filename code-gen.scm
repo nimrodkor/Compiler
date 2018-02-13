@@ -5,6 +5,8 @@ section .text
 main:
 ")
 
+(define fvars 0)
+
 (define find-in-list
 	(lambda (x in-list)
 ;		(display (format "looking for ~A in ~A\n" x in-list))
@@ -24,6 +26,17 @@ main:
 					((string? x) (find-type-in-list 'T_STRING (convert-string-to-ascii-list x) in-list))
 					(#t (begin (display (format "code-gen: need to support ~A\n" x)) #f))))
 			in-list)))
+
+(define find-in-fvar-list
+	(lambda (fvar)
+		(find-in-fvar-list-helper fvars fvar)))
+
+(define find-in-fvar-list-helper
+	(lambda (fvar-list fvar)
+		(let ((current (car fvar-list)))
+			(if (eq? fvar (cadr current))
+				(car current)
+				(find-in-fvar-list-helper (cdr fvar-list) fvar)))))
 
 (define find-type-in-list
 	(lambda (type const list)
@@ -48,13 +61,18 @@ main:
 			((equal? (car code) 'bvar) (code-gen-bvar code))
 			((and (equal? 'set (car code))) (equal? 'bvar (caadr code))
 				(code-gen-set-bvar code constants-table env-depth))
+			((equal? 'or (car code)) (code-gen-or code constants-table env-depth))
+			((equal? 'if3 (car code)) (code-gen-if code constants-table env-depth))
 			((equal? (car code) 'seq) (code-gen-seq code constants-table env-depth))
 			((equal? (car code) 'applic) (code-gen-applic code constants-table env-depth))
 			((equal? (car code) 'tc-applic) (code-gen-applic code constants-table env-depth))
+			((equal? (car code) 'define) (code-gen-define code constants-table env-depth))
+			((equal? (car code) 'fvar) (code-gen-fvar code))
 		    (#t (display (format "Code of type ~A is not yet supported" (car code)))))))
 
 (define code-gen
-	(lambda (scheme-code constants-table)
+	(lambda (scheme-code constants-table global-variable-table)
+		(set! fvars global-variable-table)
 		(string-append
 			code-header
 			(fold-right
@@ -77,6 +95,51 @@ main:
 			string-append
 			""
 			(map (lambda (e) (code-gen-helper e constants-table env-depth)) (cadr seq-exp)))))
+
+(define get-or-index
+	(let ((or-index -1)) (lambda () (set! or-index (+ 1 or-index)) or-index)))
+
+(define code-gen-or
+	(lambda (or-exp constants-table env-depth)
+		(let ((index (get-or-index)))
+		(fold-right
+			string-append
+			(format "    L_or_~A:\n" index)
+			(map
+				(lambda (or-part)
+					(string-append
+						(code-gen-helper or-part constants-table env-depth)
+						(format "    cmp rax, SOB_FALSE\n    jne L_or_~A\n" index)))
+				(cadr or-exp))))))
+
+(define get-if-index
+	(let ((if-index -1)) (lambda () (set! if-index (+ 1 if-index)) if-index)))
+
+(define code-gen-if
+	(lambda (if-exp constants-table env-depth)
+		(let 
+			((test (cadr if-exp))
+			(test-true (caddr if-exp))
+			(test-false (cadddr if-exp))
+			(index (get-if-index)))
+			(string-append
+				(code-gen-helper test constants-table env-depth)
+				(format "    cmp rax, SOB_FALSE\n    je  if_f_~A\n" index)
+				(code-gen-helper test-true constants-table env-depth)
+				(format "    jmp L_if_~A\nif_f_~A" index index)
+				(code-gen-helper test-false constants-table env-depth)
+				(format "L_if_~A:\n" index)))))
+
+(define code-gen-define
+	(lambda (define-exp constants-table env-depth) 
+		(string-append
+			(code-gen-helper (caddr define-exp) constants-table env-depth)
+			(format "    mov qword [fvar_~A], rax\n" (find-in-fvar-list (cadadr define-exp)))
+			"    mov rax, SOB_VOID\n")))
+
+(define code-gen-fvar
+	(lambda (fvar-exp)
+		(format "    mov rax, qword [fvar_~A]\n" (find-in-fvar-list (cadr fvar-exp)))))
 
 (define code-gen-pvar
 	(lambda (pvar)

@@ -337,14 +337,40 @@
 			((parsed-scheme-code (pipeline (read-from-file in-file)))
 			(constants-table (make-const-table parsed-scheme-code))
 			(symbol-table (filter (lambda (x) #t) constants-table))
-			(global-variable-table 'undef))
+			(global-variable-table (make-global-variable-table parsed-scheme-code)))
 ;			(display (format "Constants table: ~A\n" constants-table))
-;			(display (format "Parsed code: ~A" parsed-scheme-code))
+;			(display (format "Parsed code: ~A\n" parsed-scheme-code))
+;			(display (format "G-V-T: ~A\n" global-variable-table))
 			(write-to-file out-file
 				(string-append 
 					prolog 
 					(extract-const-table constants-table)
-					(code-gen parsed-scheme-code constants-table)
+					(extract-fvar-table global-variable-table)
+					(code-gen parsed-scheme-code constants-table global-variable-table)
 					epilog
 					))
 			)))
+
+(define get-fvar-address
+	(let ((fvar-address -1))
+		(lambda ()
+			(set! fvar-address (+ 1 fvar-address))
+			fvar-address)))
+
+(define make-global-variable-table
+	(lambda (code)
+		(map
+			(lambda (fvar-exp) (list (get-fvar-address) (cadadr fvar-exp)))
+			(filter 
+				(lambda (x) (and (list? x) (not (null? x)) (eq? 'define (car x)))) 
+				code))))
+
+(define extract-fvar-table
+	(lambda (fvar-list)
+		(fold-right
+			string-append
+			""
+			(map
+				(lambda (x) 
+					(format "fvar_~A:\n    dq 0\n" (car x)))
+				fvar-list))))

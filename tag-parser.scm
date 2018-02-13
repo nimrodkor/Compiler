@@ -107,17 +107,17 @@
 
 (define parse-or-helper
 	(lambda (e)
+;		(display "parsing or helper: ") (display e) (newline)
 		(if (null? e)
 			'()
 			(append (list (parse (car e))) (parse-or-helper (cdr e))))))
 
-(define parse-or 
+(define parse-or
 	(lambda (e)
-		;(display "parsing or: ") (display exp) (newline)
 		(cond 
 			((= (length e) 1) (parse #f))
 			((= (length e) 2) (parse (cadr e)))
-			(list 'or (parse-or-helper (cdr e))))))
+			(#t (list 'or (parse-or-helper (cdr e)))))))
 
 (define application? 
 	(lambda (e) 

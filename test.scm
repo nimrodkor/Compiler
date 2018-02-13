@@ -1,3 +1,7 @@
+(define x 123)
+(define y "Hi")
+x
+(if #f x y)
 2
 5
 10
@@ -33,3 +37,10 @@
 (lambda x x)
 ((lambda x 2))
 ((lambda x x) "Shati")
+(or 1 2 3)
+(or #f #t)
+(or)
+
+(if #t "True" "False")
+(if #f "True" "False")
+x
