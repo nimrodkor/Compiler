@@ -373,7 +373,8 @@
 	(lambda (code)
 		(remove-duplicates 
 			(append
-				(list 'not 'car 'cdr 'char? 'integer? 'null? 'number? 'pair? 'procedure?)
+				(list 'not 'car 'cdr 'char? 'integer? 'null? 'number? 'pair? 
+					'procedure? 'string? 'symbol? 'vector? 'set-car! 'set-cdr! '= '> '<)
 				(map cadadr
 					(filter 
 						(lambda (x) (and (list? x) (not (null? x)) (eq? 'define (car x))))
