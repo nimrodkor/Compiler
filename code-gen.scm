@@ -276,18 +276,20 @@ p_~A:
 e_~A:
 	mov [rbx], rcx
 	mov rax, 0
+	mov r8, rbp		; set up pointers for loop
+	mov r9, rbx
+	add r9, 8
+
 e_loop_~A:	
 	cmp rax, ~A ; setting up env extension (m)
 	je  CL_~A
-
-	mov r10, rax
+	mov r10, rax	; save rax for later
+	mov [r9], r8	; rbx[(i+1)*8] = rbp[i*8]
 	add rax, 1
 	sal rax, 3
-	mov r8, rax
-	add r8, rbp
-	mov r9, r8
-	add r9, 8
-	mov rax, r10
+	add r8, rax
+	add r9, rax
+	mov rax, r10	; restore rax
 	jmp e_loop_~A
 "
 		index index env-depth index index)))
@@ -297,14 +299,42 @@ e_loop_~A:
 		(format "
 	mov r8, qword [rbp + 3*8]
 	cmp r8, ~A
-	jge N_F_~A
+	jle N_F_~A
 
-	inc r8
-	mov qword [rbp + 3*8], r8
-	push SOB_NIL
+	mov r9, r8
+	sub r9, ~A		; number of params for variadic var = qword [rbp + 3*8] - num-of-params
+	mov r10, 0
+N_F_loop_~A:
+	cmp r10, r9
+	je  N_F_~A
+	mov r14, r8
+	add r14, 3
+	sal r14, 3 				
+	add r14, rbp 			
+	mov r13, qword [r14]	; r14 = rbp + (i+4)*8
+	mov rdi, 8
+	call malloc
+	mov qword[rax], r13
+	mov r13, rax
+
+	sub r14, 8				
+	mov r12, qword [r14]	; r14 = rbp + (i+3)*8
+	mov rdi, 8
+	call malloc
+	mov qword[rax], r12
+	mov r12, rax
+
+	mov rdi, 8
+	call malloc
+	MAKE_MALLOC_LITERAL_PAIR rax, r12, r13	
+	mov rax, qword [rax]
+	mov qword [r14], rax
+	dec r8
+	inc r10
+	jmp N_F_loop_~A
 
 N_F_~A:
-" num-of-params index index)))
+" num-of-params index num-of-params index index index index)))
 
 (define make-closure
 	(lambda (index)
@@ -342,19 +372,22 @@ CL_~A:
 				(code-gen-applic-params params-list const-table env-depth)
 				(code-gen-helper proc const-table env-depth)
 				apply-proc
-				(format "    call rax\n    add rsp, ~A*8\n" (+ 2 (length params-list)))))))
+				(format "    call rax\n    add rsp, ~A*8\n" (+ 3 (length params-list)))))))
 
 (define code-gen-applic-params
 	(lambda (params-list const-table env-depth)
 		(let
-			((num-of-params (length params-list)))
-			(fold-right
-				string-append
-				(format "    push ~A\n" num-of-params)
-				(map
-					(lambda (param)
-						(string-append (code-gen-helper param const-table env-depth) "    push rax\n"))
-					(reverse params-list))))))
+			((num-of-params (+ 1 (length params-list))))
+			(string-append
+				"    push SOB_NIL\n"
+				(fold-right
+					string-append
+					""
+					(map
+						(lambda (param)
+							(string-append (code-gen-helper param const-table env-depth) "    push rax\n"))
+						(reverse params-list)))
+				(format "    push ~A\n" num-of-params)))))
 
 (define code-gen-tc-applic
 	(lambda (app const-table env-depth)

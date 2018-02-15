@@ -77,6 +77,100 @@
 	pop rax
 %endmacro
 
+
+;;; MAKE_MALLOC_LITERAL_PAIR target-address, car-address, cdr-address
+%macro MAKE_MALLOC_LITERAL_PAIR 3
+push rax
+push rbx
+mov rax, %1
+mov qword [rax], %2
+sub qword [rax], start_of_data
+shl qword [rax], ((WORD_SIZE - TYPE_BITS) >> 1)
+mov rbx, %3
+sub rbx, start_of_data
+or qword [rax], rbx
+shl qword [rax], TYPE_BITS
+or qword [rax], T_PAIR
+pop rbx
+pop rax
+%endmacro
+
+%macro DENOMINATOR 1
+	mov rax, %1
+    mov rbx, rax
+	TYPE rbx
+	cmp rbx, T_INTEGER
+	je  %%B_denominator_INT
+	CDR rax
+	DATA rax
+	jmp %%B_denominator_end
+%%B_denominator_INT:
+	mov rax, 1
+%%B_denominator_end:
+%endmacro
+
+%macro NUMERATOR 1
+	mov rax, %1
+	mov rbx, rax
+	TYPE rbx
+	cmp rbx, T_INTEGER
+	je  %%B_numerator_end
+	CAR rax
+%%B_numerator_end:
+	DATA rax
+%endmacro
+
+;;; GCD m, n
+%macro GCD 2
+	mov rax, %1
+	mov rbx, %2
+%%loop:
+	mov rdx, 0
+	div rbx
+	cmp rdx, 0
+	je  %%leave
+	mov rax, rbx
+	mov rbx, rdx
+	jmp %%loop
+%%leave:
+	mov rax, rbx
+%endmacro
+
+;;; REDUCE_FRAC_TO_INT target-address, numerator-address, denominator-address
+%macro REDUCE_FRAC_TO_INT 3
+	mov rax, qword [%2]
+	mov rbx, qword [%3]
+	mov rdx, 0
+	div rbx
+	cmp rdx, 0		; see if they divide exactly
+	jne %%make_frac
+	mov rax, qword [%2]
+	sal rax, TYPE_BITS
+	or  rax, T_INTEGER
+	jmp %%REDUCE_END
+%%make_frac:						; not an int, create fraction
+	mov rax, qword [%2]			; setup numerator
+	sal rax, TYPE_BITS
+	or  rax, T_INTEGER
+	mov qword [%2], rax
+
+	mov rbx, qword [%3]			;setup denomintator
+	sal rbx, TYPE_BITS
+	or  rbx, T_INTEGER
+	mov qword [%3], rbx
+
+	mov rax, %2
+	sub rax, start_of_data
+	shl rax, ((WORD_SIZE - TYPE_BITS) >> 1)
+	mov rbx, %3
+	sub rbx, start_of_data
+	or  rax, rbx
+	shl rax, TYPE_BITS
+	or  rax, T_FRACTION
+%%REDUCE_END:
+	mov %1, rax
+%endmacro
+
 %macro CLOSURE_ENV 1
 	DATA_UPPER %1
 	add %1, start_of_data

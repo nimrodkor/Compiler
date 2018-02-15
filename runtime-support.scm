@@ -459,16 +459,8 @@ B_equals:
     push rbp
     mov rbp, rsp
 
-	mov r8, qword [rbp + 3*8]
-	cmp r8, 1
-	jge N_F_equals
-
-	inc r8
-	mov qword [rbp + 3*8], r8
-	push SOB_NIL
-
-N_F_equals:
     mov r8, qword [rbp + 3*8] ; get actual num of params
+    sub r8, 1				  ; ignore '() param
     mov rax, 0
     mov r9, qword [rbp + 4*8]
 equals_loop:
@@ -510,16 +502,8 @@ B_gt:
     push rbp
     mov rbp, rsp
 
-	mov r8, qword [rbp + 3*8]
-	cmp r8, 1
-	jge N_F_gt
-
-	inc r8
-	mov qword [rbp + 3*8], r8
-	push SOB_NIL
-
-N_F_gt:
     mov r8, qword [rbp + 3*8] ; get actual num of params
+    sub r8, 1				  ; ignore '() param
     mov rax, 0
     mov r9, qword [rbp + 4*8]
 gt_loop:
@@ -562,16 +546,8 @@ B_lt:
     push rbp
     mov rbp, rsp
 
-	mov r8, qword [rbp + 3*8]
-	cmp r8, 1
-	jge N_F_lt
-
-	inc r8
-	mov qword [rbp + 3*8], r8
-	push SOB_NIL
-
-N_F_lt:
     mov r8, qword [rbp + 3*8] ; get actual num of params
+    sub r8, 1				  ; ignore '() param
     mov rax, 0
     mov r9, qword [rbp + 4*8]
 lt_loop:
@@ -588,7 +564,7 @@ lt_loop:
     jmp lt_loop
 lt_B_true:
 	mov rax, SOB_TRUE
-    jmp gt_B_end
+    jmp lt_B_end
 lt_B_false:
 	mov rax, SOB_FALSE
 lt_B_end:
@@ -598,6 +574,139 @@ lt_B_end:
 L_lt:
     mov rax, qword [rax]
     mov qword [fvar_16], rax
+    mov rax, SOB_VOID
+"))
+
+(define plus-assembly
+	(string-append set-up-global-env-with-one-var
+"
+CL_plus:
+	mov rdi, 16
+	call malloc
+	MAKE_LITERAL_CLOSURE rax, rbx, B_plus
+	jmp L_plus
+B_plus:
+    push rbp
+    mov rbp, rsp
+
+    mov r9, qword [rbp + 4*8]
+    TYPE r9,
+    cmp r9, T_NIL
+    je  plus_zero
+    mov r9, qword [rbp + 4*8]
+    mov rax, r9
+    mov r14, qword [rbp + 3*8]
+    sub r14, 1
+    mov r15, 0
+plus_loop:
+    inc r15
+    cmp r15, r14
+    je  plus_end
+
+    mov rbx, r15
+    add rbx, 4
+    shl rbx, 3
+    mov r8, qword [rbp + rbx]	; rbx = (r15 + 4)*8
+    ; r9 = a/b, r8 = c/d
+	NUMERATOR r9
+	mov r10, rax 		; r10 = a
+	DENOMINATOR r8
+	mul r10				
+	mov r10, rax 		; r10 = a*d
+	NUMERATOR r8
+	mov r11, rax 		; r11 = c
+	DENOMINATOR r9
+	mul r11
+	mov r11, rax 		; r11 = b*c
+	DENOMINATOR r8
+	mov r12, rax
+	DENOMINATOR r9
+	mul r12
+	mov r12, rax 		; r12 = b*d = solution denominator
+	add r10, r11		; r10 = solution numerator
+	GCD r10, r12
+	mov r11, rax 		; r11 = gcd(numerator, denominator)
+	mov rax, r10
+	div r11
+	mov r13, rax 		; r13 = numerator after reduction
+	mov rax, r12
+	div r11
+	mov r12, rax 		; r12 = denominator after reduction
+	mov rdi, 8
+	call malloc
+	mov r8, r13
+	mov r13, rax
+	mov qword [r13], r8
+	mov rdi, 8
+	call malloc
+	mov r9, r12
+	mov r12, rax
+	mov qword [r12], r9
+	mov rdi, 8
+
+	REDUCE_FRAC_TO_INT r10, r13, r12	; r10 = pointer to dest, r8 - numerator, r9 - denominator
+
+	mov r9, r10
+    jmp plus_loop
+plus_zero:
+	mov rax, 0
+	sal rax, TYPE_BITS
+	or rax, T_INTEGER
+plus_end:
+    leave
+    ret
+
+L_plus:
+    mov rax, qword [rax]
+    mov qword [fvar_17], rax
+    mov rax, SOB_VOID
+"))
+
+(define numerator-assembly
+	(string-append set-up-global-env-with-one-var
+"
+CL_numerator:
+	mov rdi, 16
+	call malloc
+	MAKE_LITERAL_CLOSURE rax, rbx, B_numerator
+
+	jmp L_numerator
+B_numerator:
+    push rbp
+    mov rbp, rsp
+    mov rax, qword [rbp + 4*8]
+    NUMERATOR rax
+    sal rax, TYPE_BITS
+    or  rax, T_INTEGER
+    leave
+    ret
+L_numerator:
+    mov rax, qword [rax]
+    mov qword [fvar_18], rax
+    mov rax, SOB_VOID
+"))
+
+(define denominator-assembly
+	(string-append set-up-global-env-with-one-var
+"
+CL_denominator:
+	mov rdi, 16
+	call malloc
+	MAKE_LITERAL_CLOSURE rax, rbx, B_denominator
+
+	jmp L_denominator
+B_denominator:
+    push rbp
+    mov rbp, rsp
+    mov rax, qword [rbp + 4*8]
+    DENOMINATOR rax
+    sal rax, TYPE_BITS
+    or  rax, T_INTEGER
+    leave
+    ret
+L_denominator:
+    mov rax, qword [rax]
+    mov qword [fvar_19], rax
     mov rax, SOB_VOID
 "))
 
@@ -622,13 +731,15 @@ L_lt:
 			equals-assembly
 			greater-than-assembly
 			less-than-assembly
+			plus-assembly
+			numerator-assembly
+			denominator-assembly
 			"\n;; End of library functions \n\n")))
 
 
 (define get-scheme-impls
 "")
 ;"
-;(define numerator car)
 ;(define denominator cdr)
 ;(define zero? (lambda (x) (and (number? x) (= 0 x))))
 ;(define rational? (lambda (x) (and (number? x) (not (integer? x))))
