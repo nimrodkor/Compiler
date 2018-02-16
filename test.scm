@@ -101,3 +101,57 @@ pair-example
 ((lambda (x) (+ x x)) 2)
 (+ 1/2 2/4)
 (+ 1/2 2)
+boolean?
+(boolean? #t)
+(boolean? #f)
+(boolean? 2)
+(= (+ 3 1) (+ 2 4/2))
+(*)
+(* 2 3)
+(* 1 2 3 4)
+(* 1/4 3 8)
+*
+/
+(/ 3 1/9)
+(/ 3)
+(/ 6 2 3)
+(/ 6 1/2 4/1)
+-
+(- 3)
+(- 16 2)
+(= (+ 2 2) (- 5 1) (* 4 1) (/ 24 2 3))
+(remainder 2 1)
+(remainder 4 3)
+char->integer
+(char->integer #\a)
+(integer->char (char->integer #\a))
+(cons 1 (cons 2 (cons 3 '())))
+list
+(list)
+(list 4 5 6)
+(list (+ 1 2))
+#(0 1 2 3)
+(make-vector 3)
+(make-vector 0)
+vector
+(vector 1 2 3)
+vector-length
+(vector-length (vector 1 2 3 4 5 6))
+vector-ref
+(define vec (vector 1 2 3 4 5 6))
+(vector-ref vec 3)
+(vector-ref (vector 1 2 3 4 5 6) 3)
+(vector-set! vec 3 10)
+(vector-ref vec 3)
+vec
+make-string
+(make-string 2)
+"123"
+(string-length "123")
+(define nim "Nimrod")
+(string-ref nim 5)
+(string-set! nim 0 #\n)
+nim
+
+;(((lambda (x) (lambda (y) x)) 4) 3)
+;(string-length "Nimrod")

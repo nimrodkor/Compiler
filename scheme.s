@@ -35,11 +35,11 @@
 %endmacro
 
 %macro DATA_UPPER 1
-	sar %1, (((WORD_SIZE - TYPE_BITS) >> 1) + TYPE_BITS)
+	shr %1, (((WORD_SIZE - TYPE_BITS) >> 1) + TYPE_BITS)
 %endmacro
 
 %macro DATA_LOWER 1
-	sal %1, ((WORD_SIZE - TYPE_BITS) >> 1)
+	shl %1, ((WORD_SIZE - TYPE_BITS) >> 1)
 	DATA_UPPER %1
 %endmacro
 
@@ -199,13 +199,12 @@ pop rax
 %endmacro
 
 ;;; STRING_REF dest, src, index
-;;; dest cannot be RAX! (fix this!)
 %macro STRING_REF 3
 	push rax
 	mov rax, %2
 	STRING_ELEMENTS rax
 	add rax, %3
-	mov %1, byte [rax]
+	movzx %1, byte [rax]
 	pop rax
 %endmacro
 
@@ -357,7 +356,7 @@ section .data
 .special:
 	db "#\x%02x", 0
 .regular:
-	db "#\\%c", 0
+	db "#\%c", 0
 
 write_sob_void:
 	push rbp
@@ -648,7 +647,7 @@ section	.data
 
 write_sob_symbol:
 	push rbp
-	mov rbp, rsp
+	mov rsp, rbp
 
 	leave
 	ret
@@ -676,6 +675,8 @@ write_sob_fraction:
 section .data
 .frac_div:
 	db "/", 0
+
+
 
 write_sob_closure:
 	push rbp

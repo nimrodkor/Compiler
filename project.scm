@@ -125,7 +125,7 @@
 							(box-set
 								(remove-applic-lambda-nil
 									(parse e))))))
-				m))
+				(append get-scheme-impls m)))
 			(lambda (f) 'fail))))
 
 (define get-consts-from-sexpr
@@ -336,9 +336,7 @@
 	(lambda (in-file out-file)
 		(let* 
 			((parsed-scheme-code 
-				(pipeline 
-					(append (string->list get-scheme-impls)
-						(read-from-file in-file))))
+				(pipeline (read-from-file in-file)))
 			(constants-table (make-const-table parsed-scheme-code))
 			(symbol-table (filter (lambda (x) #t) constants-table))
 			(global-variable-table (make-global-variable-table '() (extract-fvars-from-code parsed-scheme-code))))
@@ -373,8 +371,10 @@
 	(lambda (code)
 		(remove-duplicates 
 			(append
-				(list 'not 'car 'cdr 'char? 'integer? 'null? 'number? 'pair? 
-					'procedure? 'string? 'symbol? 'vector? 'set-car! 'set-cdr! '= '> '< '+ 'numerator 'denominator)
+				(list 'not 'car 'cdr 'char? 'integer? 'null? 'number? 'pair? 'procedure? 'string? 'symbol? 'vector? 
+				'set-car! 'set-cdr! '= '> '< '+ 'numerator 'denominator 'boolean? '* '/ '- 'remainder 'char->integer 
+				'integer->char 'cons 'list 'make-vector 'vector 'vector-length 'vector-ref 'vector-set! 
+				'make-string 'string-length 'string-ref 'string-set!)
 				(map cadadr
 					(filter 
 						(lambda (x) (and (list? x) (not (null? x)) (eq? 'define (car x))))

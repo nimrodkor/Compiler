@@ -1,6 +1,7 @@
 
 (define set-up-global-env-with-one-var
-"	mov rdi, 8
+"	
+	mov rdi, 8
 	call malloc
 	mov rcx, rax
 	mov rdi, 8
@@ -17,10 +18,10 @@
 	add rax, 8
 ")
 
-(define set-up-global-env-with-two-vars
-	(lambda (tag)
+(define set-up-global-env-with-n-vars
+	(lambda (n tag)
 	(format "
-	mov rdi, 8*2
+	mov rdi, 8*~A
 	call malloc
 	mov rcx, rax
 	mov rdi, 8*1 				
@@ -28,7 +29,7 @@
 	mov rbx, rax
 	mov rax, 0
 p_~A:
-	cmp	rax, 2				
+	cmp	rax, ~A				
 	je  e_~A
 	mov r10, rax
 	add rax, 4
@@ -43,7 +44,7 @@ p_~A:
 	jmp p_~A
 e_~A:
 	mov [rbx], rcx
-" tag tag tag tag)))
+" n tag n tag tag tag)))
 
 (define not-assembly
 (string-append "\n;;  not? ;;\n" set-up-global-env-with-one-var "
@@ -176,6 +177,35 @@ L_integer:
     mov qword [fvar_4], rax
     mov rax, SOB_VOID
 "))
+
+(define boolean?-assembly
+	(string-append "\n;;  boolean? ;;\n" set-up-global-env-with-one-var
+"
+CL_bool:
+	mov rdi, 16
+	call malloc
+	MAKE_LITERAL_CLOSURE rax, rbx, B_bool
+
+	jmp L_bool
+B_bool:
+	push rbp
+    mov rbp, rsp
+    mov rax, qword[rbp + 4*8]
+    TYPE rax
+    cmp rax, T_BOOL
+    je  B_bool_true
+    mov rax, qword[const_2]
+    jmp B_bool_end
+B_bool_true:
+	mov rax, qword[const_3]
+B_bool_end:
+	leave
+	ret
+L_bool:
+	mov rax, qword [rax]
+    mov qword [fvar_20], rax
+    mov rax, SOB_VOID
+	"))
 
 (define null?-assembly
 	(string-append "\n;;  null? ;;\n"set-up-global-env-with-one-var
@@ -383,7 +413,7 @@ L_vector:
 "))
 
 (define set-car!-assembly
-	(string-append "\n;;   set-car!   ;;\n" (set-up-global-env-with-two-vars "set_car")
+	(string-append "\n;;   set-car!   ;;\n" (set-up-global-env-with-n-vars 2 "set_car")
 "
 CL_set_car:
 	mov rdi, 16
@@ -415,7 +445,7 @@ L_set_car:
 "))
 
 (define set-cdr!-assembly
-	(string-append "\n;;   set-cdr!   ;;\n" (set-up-global-env-with-two-vars "set_cdr")
+	(string-append "\n;;   set-cdr!   ;;\n" (set-up-global-env-with-n-vars 2 "set_cdr")
 "
 CL_set_cdr:
 	mov rdi, 16
@@ -447,7 +477,7 @@ L_set_cdr:
 "))
 
 (define equals-assembly
-	(string-append set-up-global-env-with-one-var 
+	(string-append "\n;;   =   ;;\n" set-up-global-env-with-one-var 
 "
 CL_equals:
 	mov rdi, 16
@@ -534,7 +564,7 @@ L_gt:
 "))
 
 (define less-than-assembly
-	(string-append set-up-global-env-with-one-var 
+	(string-append  "\n;;   <   ;;\n" set-up-global-env-with-one-var 
 "
 CL_lt:
 	mov rdi, 16
@@ -578,7 +608,7 @@ L_lt:
 "))
 
 (define plus-assembly
-	(string-append set-up-global-env-with-one-var
+	(string-append  "\n;;   +   ;;\n" set-up-global-env-with-one-var
 "
 CL_plus:
 	mov rdi, 16
@@ -663,7 +693,7 @@ L_plus:
 "))
 
 (define numerator-assembly
-	(string-append set-up-global-env-with-one-var
+	(string-append  "\n;;   numerator   ;;\n" set-up-global-env-with-one-var
 "
 CL_numerator:
 	mov rdi, 16
@@ -687,7 +717,7 @@ L_numerator:
 "))
 
 (define denominator-assembly
-	(string-append set-up-global-env-with-one-var
+	(string-append  "\n;;   denominator   ;;\n" set-up-global-env-with-one-var
 "
 CL_denominator:
 	mov rdi, 16
@@ -710,11 +740,717 @@ L_denominator:
     mov rax, SOB_VOID
 "))
 
+(define mul-assembly
+	(string-append  "\n;;   mul   ;;\n" set-up-global-env-with-one-var
+"
+CL_mul:
+	mov rdi, 16
+	call malloc
+	MAKE_LITERAL_CLOSURE rax, rbx, B_mul
+	jmp L_mul
+B_mul:
+    push rbp
+    mov rbp, rsp
+
+    mov r9, qword [rbp + 4*8]
+    TYPE r9,
+    cmp r9, T_NIL
+    je  mul_one
+    mov r9, qword [rbp + 4*8]
+    mov rax, r9
+    mov r14, qword [rbp + 3*8]
+    sub r14, 1
+    mov r15, 0
+mul_loop:
+    inc r15
+    cmp r15, r14
+    je  mul_end
+
+    mov rbx, r15
+    add rbx, 4
+    shl rbx, 3
+    mov r8, qword [rbp + rbx]	; rbx = (r15 + 4)*8
+    ; r9 = a/b, r8 = c/d
+	NUMERATOR r9
+	mov r10, rax 		; r10 = a
+	NUMERATOR r8
+	mul r10				
+	mov r10, rax 		; r10 = a*c = solution numerator
+	DENOMINATOR r8
+	mov r11, rax 		; r11 = b
+	DENOMINATOR r9
+	mul r11
+	mov r11, rax 		; r11 = b*d = solution denominator
+	GCD r10, r11
+	mov r12, rax 		; r12 = gcd(numerator, denominator)
+	mov rax, r10
+	div r12
+	mov r13, rax 		; r13 = numerator after reduction
+	mov rax, r11
+	div r12
+	mov r12, rax 		; r12 = denominator after reduction
+	mov rdi, 8
+	call malloc
+	mov r8, r13
+	mov r13, rax
+	mov qword [r13], r8
+	mov rdi, 8
+	call malloc
+	mov r9, r12
+	mov r12, rax
+	mov qword [r12], r9
+	mov rdi, 8
+
+	REDUCE_FRAC_TO_INT r10, r13, r12	; r10 = pointer to dest, r8 - numerator, r9 - denominator
+
+	mov r9, r10
+    jmp mul_loop
+mul_one:
+	mov rax, 1
+	sal rax, TYPE_BITS
+	or  rax, T_INTEGER
+mul_end:
+    leave
+    ret
+
+L_mul:
+    mov rax, qword [rax]
+    mov qword [fvar_21], rax
+    mov rax, SOB_VOID
+"))
+
+(define div-assembly
+	(string-append  "\n;;   /   ;;\n" set-up-global-env-with-one-var
+"
+CL_div:
+	mov rdi, 16
+	call malloc
+	MAKE_LITERAL_CLOSURE rax, rbx, B_div
+	jmp L_div
+B_div:
+    push rbp
+    mov rbp, rsp
+
+    mov r9, qword [rbp + 4*8]
+    TYPE r9,
+    cmp r9, T_NIL
+    je  END 					; Dividing with no parameters is invalid
+    mov r14, qword [rbp + 3*8]
+    cmp r14, 3
+    jl  div_with_1
+    mov r9, qword [rbp + 4*8]
+    mov rax, r9
+    mov r15, 1
+    jmp div_loop
+div_with_1:
+	mov rax, 1
+	sal rax, TYPE_BITS
+	or  rax, T_INTEGER
+	mov r9, rax
+	mov r15, 0
+div_loop:
+    inc r15
+    cmp r15, r14
+    je  div_end
+    mov rbx, r15
+    add rbx, 3
+    shl rbx, 3
+    mov r8, qword [rbp + rbx]	; rbx = (r15 + 3)*8
+    ; r9 = a/b, r8 = c/d
+	NUMERATOR r9
+	mov r10, rax 		; r10 = a
+	DENOMINATOR r8
+	mul r10				
+	mov r10, rax 		; r10 = a*d = solution numerator
+	DENOMINATOR r9
+	mov r11, rax 		; r11 = b
+	NUMERATOR r8
+	mul r11
+	mov r11, rax 		; r11 = b*c = solution denominator
+	GCD r10, r11
+	mov r12, rax 		; r12 = gcd(numerator, denominator)
+	mov rax, r10
+	div r12
+	mov r13, rax 		; r13 = numerator after reduction
+	mov rax, r11
+	div r12
+	mov r12, rax 		; r12 = denominator after reduction
+	mov rdi, 8
+	call malloc
+	mov r8, r13
+	mov r13, rax
+	mov qword [r13], r8
+	mov rdi, 8
+	call malloc
+	mov r9, r12
+	mov r12, rax
+	mov qword [r12], r9
+	mov rdi, 8
+
+	REDUCE_FRAC_TO_INT r10, r13, r12	; r10 = pointer to dest, r8 - numerator, r9 - denominator
+
+	mov r9, r10
+    jmp div_loop	
+div_end:
+    leave
+    ret
+
+L_div:
+    mov rax, qword [rax]
+    mov qword [fvar_22], rax
+    mov rax, SOB_VOID
+"))
+
+(define subtract-assembly
+	(string-append  "\n;;   -   ;;\n" set-up-global-env-with-one-var
+"
+CL_sub:
+	mov rdi, 16
+	call malloc
+	MAKE_LITERAL_CLOSURE rax, rbx, B_sub
+	jmp L_sub
+B_sub:
+    push rbp
+    mov rbp, rsp
+    mov r9, qword [rbp + 4*8]
+    TYPE r9
+    cmp r9, T_NIL
+    je  END 					; Subtracting with no parameters is invalid
+    mov r14, qword [rbp + 3*8]
+    cmp r14, 3
+    jl  sub_with_0
+    mov r9, qword [rbp + 4*8]
+    mov rax, r9
+    mov r15, 1
+    jmp sub_loop
+sub_with_0:
+	mov rax, 0
+	sal rax, TYPE_BITS
+	or  rax, T_INTEGER
+	mov r9, rax
+	mov r15, 0
+sub_loop:
+    inc r15
+    cmp r15, r14
+    je  sub_end
+    mov rbx, r15
+    add rbx, 3
+    shl rbx, 3
+    mov r8, qword [rbp + rbx]	; rbx = (r15 + 3)*8
+    ; r9 = a/b, r8 = c/d
+	NUMERATOR r9
+	mov r10, rax 		; r10 = a
+	DENOMINATOR r8
+	mul r10				
+	mov r10, rax 		; r10 = a*d
+	NUMERATOR r8
+	mov r11, rax 		; r11 = c
+	DENOMINATOR r9
+	mul r11
+	mov r11, rax 		; r11 = b*c
+	DENOMINATOR r8
+	mov r12, rax
+	DENOMINATOR r9
+	mul r12
+	mov r12, rax 		; r12 = b*d = solution denominator
+	sub r10, r11		; r10 = solution numerator
+	GCD r10, r12
+	mov r11, rax 		; r11 = gcd(numerator, denominator)
+	mov rax, r10
+	div r11
+	mov r13, rax 		; r13 = numerator after reduction
+	mov rax, r12
+	div r11
+	mov r12, rax 		; r12 = denominator after reduction
+	mov rdi, 8
+	call malloc
+	mov r8, r13
+	mov r13, rax
+	mov qword [r13], r8
+	mov rdi, 8
+	call malloc
+	mov r9, r12
+	mov r12, rax
+	mov qword [r12], r9
+	mov rdi, 8
+
+	REDUCE_FRAC_TO_INT r10, r13, r12	; r10 = pointer to dest, r8 - numerator, r9 - denominator
+
+	mov r9, r10
+    jmp sub_loop
+sub_end:
+    leave
+    ret
+
+L_sub:
+    mov rax, qword [rax]
+    mov qword [fvar_23], rax
+    mov rax, SOB_VOID
+"))	
+
+(define remainder-assembly
+	(string-append  "\n;;   remainder   ;;\n" (set-up-global-env-with-n-vars 2 "remainder")
+"
+CL_remainder:
+	mov rdi, 16
+	call malloc
+	MAKE_LITERAL_CLOSURE rax, rbx, B_remainder
+
+	jmp L_remainder
+B_remainder:
+    push rbp
+    mov rbp, rsp
+
+    mov r14, qword [rbp + 3*8]
+    cmp r14, 3
+    jne END
+    
+    mov r12, qword [rbp + 4*8]
+	DATA r12
+    mov r13, qword [rbp + 5*8]
+	DATA r13
+    ; r12 = to-divide (integer), r13 = divisor (integer)
+	mov rax, r12
+	mov rbx, r13
+	mov rdx, 0
+	div rbx
+	sal rdx, TYPE_BITS
+	or  rdx, T_INTEGER
+	mov rax, rdx
+    leave
+    ret
+
+L_remainder:
+    mov rax, qword [rax]
+    mov qword [fvar_24], rax
+    mov rax, SOB_VOID
+"))
+
+(define char->integer-assmebly
+	(string-append "\n;;    char->integer   ;;\n" set-up-global-env-with-one-var
+"
+CL_char_integer:
+	mov rdi, 16
+	call malloc
+	MAKE_LITERAL_CLOSURE rax, rbx, B_char_integer
+
+	jmp L_char_integer
+B_char_integer:
+	push rbp
+	mov rbp, rsp
+	mov rax, qword [rbp + 4*8]
+	mov rbx, T_CHAR
+	xor rax, rbx
+	mov rbx, T_INTEGER
+	xor rax, rbx
+	leave
+	ret
+L_char_integer:
+	mov rax, qword [rax]
+	mov qword [fvar_25], rax
+	mov rax, SOB_VOID
+"))
+
+(define cons-assembly
+	(string-append "\n;;    cons   ;;\n" (set-up-global-env-with-n-vars 2 "cons")
+"
+CL_cons:
+	mov rdi, 16
+	call malloc
+	MAKE_LITERAL_CLOSURE rax, rbx, B_cons
+
+	jmp L_cons
+B_cons:
+	push rbp
+	mov rbp, rsp
+	mov r12, qword [rbp + 4*8]
+	mov r13, qword [rbp + 5*8]
+	mov rdi, 8
+	call malloc
+	mov qword[rax], r12
+	mov r12, rax
+	mov rdi, 8
+	call malloc
+	mov qword[rax], r13
+	mov r13, rax
+	mov rdi, 8
+	call malloc
+	MAKE_MALLOC_LITERAL_PAIR rax, r12, r13	
+	mov rax, qword [rax]
+	leave
+	ret
+L_cons:
+	mov rax, qword [rax]
+	mov qword [fvar_27], rax
+	mov rax, SOB_VOID
+"))
+
+(define list-assembly
+	(string-append "\n;;;     list     ;;;\n" set-up-global-env-with-one-var
+"
+CL_list:
+	mov rdi, 16
+	call malloc
+	MAKE_LITERAL_CLOSURE rax, rbx, B_list
+
+	jmp L_list
+B_list:
+	push rbp
+	mov rbp, rsp
+	mov r8, qword [rbp + 3*8]
+	cmp r8, 1
+	je  B_list_empty
+	mov r9, r8
+	mov r10, 0
+B_list_loop:
+	cmp r10, r9
+	je  B_list_end
+	mov r14, r8
+	add r14, 3
+	sal r14, 3 				
+	add r14, rbp 			
+	mov r13, qword [r14]	; r14 = rbp + (i+4)*8
+	mov rdi, 8
+	call malloc
+	mov qword[rax], r13
+	mov r13, rax
+
+	sub r14, 8				
+	mov r12, qword [r14]	; r14 = rbp + (i+3)*8
+	mov rdi, 8
+	call malloc
+	mov qword[rax], r12
+	mov r12, rax
+	mov rdi, 8
+	call malloc
+	MAKE_MALLOC_LITERAL_PAIR rax, r12, r13	
+	mov rax, qword [rax]
+	mov qword [r14], rax
+	dec r8
+	inc r10
+	jmp B_list_loop
+B_list_empty:
+	mov rax, SOB_NIL
+	jmp B_list_finish
+B_list_end:
+	mov rax, qword [rbp + 4*8]
+B_list_finish:
+	leave
+	ret
+L_list:
+	mov rax, qword [rax]
+	mov qword [fvar_28], rax
+	mov rax, SOB_VOID
+"))
+
+(define make-vector-assembly
+	(string-append "\n;;;     make-vector     ;;;\n" set-up-global-env-with-one-var
+"
+CL_make_vector:
+	mov rdi, 16
+	call malloc
+	MAKE_LITERAL_CLOSURE rax, rbx, B_make_vector
+
+	jmp L_make_vector
+B_make_vector:
+	push rbp
+	mov rbp, rsp
+	mov r12, qword [rbp + 4*8]
+	DATA r12
+	mov r15, 0
+	sal r15, TYPE_BITS
+	or  r15, T_INTEGER
+	mov rdi, 8
+	call malloc
+	mov qword[rax], r15
+	mov r15, rax
+	mov rdi, r12
+	shl rdi, 3
+	call malloc
+	mov rbx, rax
+	mov rdx, 0
+
+B_make_vector_elements_loop:
+	cmp rdx, r12
+	je  make_vector_register
+	mov qword[rbx], r15
+	add rbx, 8
+	inc rdx
+	jmp B_make_vector_elements_loop
+make_vector_register:
+	mov r13, r12
+	sal r13, ((WORD_SIZE - TYPE_BITS) >> 1)
+	sub rax, start_of_data
+	add r13, rax
+	sal r13, TYPE_BITS
+	or  r13, T_VECTOR
+	mov rax, r13
+	leave
+	ret
+L_make_vector:
+	mov rax, qword [rax]
+	mov qword [fvar_29], rax
+	mov rax, SOB_VOID
+"))
+
+(define vector-assembly
+	(string-append "\n;;;     vector     ;;;\n" set-up-global-env-with-one-var
+"
+CL_vector_create:
+	mov rdi, 16
+	call malloc
+	MAKE_LITERAL_CLOSURE rax, rbx, B_vector_create
+	jmp L_vector_create
+B_vector_create:
+	push rbp
+	mov rbp, rsp
+	mov r12, qword [rbp + 3*8]
+	sub r12, 1
+	mov rdi, r12
+	shl rdi, 3
+	call malloc
+	mov r14, rax
+	mov rbx, rax
+	mov rdx, 0
+B_vector_elements_loop:
+	cmp rdx, r12
+	je  vector_register
+	push rbx
+	push rdx
+	mov rdi, 8
+	call malloc
+	pop rdx
+	mov r15, qword [rbp + (4 + rdx)*8]
+	mov qword[rax], r15
+	mov r15, rax
+	pop rbx
+	mov qword[rbx], r15
+	add rbx, 8
+	inc rdx
+	jmp B_vector_elements_loop
+vector_register:
+	mov r13, r12
+	sal r13, ((WORD_SIZE - TYPE_BITS) >> 1)
+	sub r14, start_of_data
+	add r13, r14
+	sal r13, TYPE_BITS
+	or  r13, T_VECTOR
+	mov rax, r13
+	leave
+	ret
+L_vector_create:
+	mov rax, qword [rax]
+	mov qword [fvar_30], rax
+	mov rax, SOB_VOID
+"))
+
+(define vector-length-assembly
+	(string-append "\n;;;     vector-length     ;;;\n" set-up-global-env-with-one-var
+"
+CL_vector_length:
+	mov rdi, 16
+	call malloc
+	MAKE_LITERAL_CLOSURE rax, rbx, B_vector_length
+	jmp L_vector_length
+B_vector_length:
+	push rbp
+	mov rbp, rsp
+	mov rax, qword [rbp + 4*8]
+	VECTOR_LENGTH rax
+	shl rax, TYPE_BITS
+	or 	rax, T_INTEGER
+	leave
+	ret
+L_vector_length:
+	mov rax, qword [rax]
+	mov qword [fvar_31], rax
+	mov rax, SOB_VOID
+"))
+
+(define vector-ref-assembly
+	(string-append "\n;;;     vector-ref     ;;;\n" (set-up-global-env-with-n-vars 2 "vector_ref")
+"
+CL_vector_ref:
+	mov rdi, 16
+	call malloc
+	MAKE_LITERAL_CLOSURE rax, rbx, B_vector_ref
+
+	jmp L_vector_ref
+B_vector_ref:
+	push rbp
+	mov rbp, rsp
+	mov rax, qword [rbp + 4*8]
+	mov r13, qword [rbp + 5*8]
+	DATA r13
+	sal r13, 3
+	VECTOR_ELEMENTS rax
+	add rax, r13
+	mov rax, qword [rax]
+	leave
+	ret
+L_vector_ref:
+	mov rax, qword [rax]
+	mov qword [fvar_32], rax
+	mov rax, SOB_VOID
+"))
+
+(define vector-set!-assembly
+	(string-append "\n;;;     vector-set     ;;;\n" (set-up-global-env-with-n-vars 3 "vector_set")
+"
+CL_vector_set:
+	mov rdi, 16
+	call malloc
+	MAKE_LITERAL_CLOSURE rax, rbx, B_vector_set
+
+	jmp L_vector_set
+B_vector_set:
+	push rbp
+	mov rbp, rsp
+	mov rax, qword [rbp + 4*8]	; vector
+	mov r13, qword [rbp + 5*8]	; index
+	mov r14, qword [rbp + 6*8]	; to-add
+	DATA r13
+	sal r13, 3
+	VECTOR_ELEMENTS rax
+	add rax, r13
+	mov rax, qword [rax]
+	mov qword [rax], r14
+	mov rax, SOB_VOID
+	add rsp, 8
+	leave
+	ret
+L_vector_set:
+	mov rax, qword [rax]
+	mov qword [fvar_33], rax
+	mov rax, SOB_VOID
+"))
+
+(define make-string-assembly
+	(string-append "\n;;;     make-string     ;;;\n" set-up-global-env-with-one-var
+"
+CL_make_string:
+	mov rdi, 16
+	call malloc
+	MAKE_LITERAL_CLOSURE rax, rbx, B_make_string
+
+	jmp L_make_string
+B_make_string:
+	push rbp
+	mov rbp, rsp
+	mov r13, qword [rbp + 4*8]
+	DATA r13
+	mov rdi, r13
+	sal rdi, 3
+	call malloc
+	mov rbx, 0
+B_make_string_loop:
+	cmp rbx, r13
+	je make_string_register
+	mov qword[rax + rbx], 0
+	inc rbx
+	jmp B_make_string_loop
+make_string_register:
+	sal r13, ((WORD_SIZE - TYPE_BITS) >> 1)
+	sub rax, start_of_data
+	add r13, rax
+	sal r13, TYPE_BITS
+	or  r13, T_STRING
+	mov rax, r13
+	leave
+	ret
+L_make_string:
+	mov rax, qword [rax]
+	mov qword [fvar_34], rax
+	mov rax, SOB_VOID
+"))
+
+(define string-length-assembly
+	(string-append "\n;;;     string-length     ;;;\n" set-up-global-env-with-one-var
+"
+CL_string_length:
+	mov rdi, 16
+	call malloc
+	MAKE_LITERAL_CLOSURE rax, rbx, B_string_length
+
+	jmp L_string_length
+B_string_length:
+	push rbp
+	mov rbp, rsp
+	mov rax, qword [rbp + 4*8]
+	STRING_LENGTH rax
+	sal rax, 4
+	or rax, T_INTEGER
+	leave
+	ret
+L_string_length:
+	mov rax, qword [rax]
+	mov qword [fvar_35], rax
+	mov rax, SOB_VOID
+"))
+
+(define string-ref-assembly
+	(string-append "\n;;;     string-ref     ;;;\n" (set-up-global-env-with-n-vars 2 "string_ref")
+"
+CL_string_ref:
+	mov rdi, 16
+	call malloc
+	MAKE_LITERAL_CLOSURE rax, rbx, B_string_ref
+
+	jmp L_string_ref
+B_string_ref:
+	push rbp
+	mov rbp, rsp
+	mov rbx, qword [rbp + 4*8]
+	mov rcx, qword [rbp + 5*8]
+	DATA rcx					; offset
+	STRING_ELEMENTS rbx
+	add rbx, rcx
+	movzx rax, byte [rbx]
+	shl rax, TYPE_BITS
+	or rax, T_CHAR
+	leave
+	ret
+L_string_ref:
+	mov rax, qword [rax]
+	mov qword [fvar_36], rax
+	mov rax, SOB_VOID
+"))
+
+(define string-set!-assembly
+	(string-append "\n;;;     string-set     ;;;\n" (set-up-global-env-with-n-vars 3 "string_set")
+"
+CL_string_set:
+	mov rdi, 16
+	call malloc
+	MAKE_LITERAL_CLOSURE rax, rbx, B_string_set
+
+	jmp L_string_set
+B_string_set:
+	push rbp
+	mov rbp, rsp
+	mov rbx, qword [rbp + 4*8]
+	mov rcx, qword [rbp + 5*8]
+	DATA rcx					; offset
+	STRING_ELEMENTS rbx
+	add rbx, rcx
+	mov rdx, qword [rbp + 6*8]
+	DATA rdx
+	mov byte [rbx], dl
+	mov rax, SOB_VOID
+	leave
+	ret
+L_string_set:
+	mov rax, qword [rax]
+	mov qword [fvar_37], rax
+	mov rax, SOB_VOID
+"))
+
 (define get-runtime-assembly-functions
 	(lambda ()
 		(string-append
 			"\n;; Start of library functions \n\n"
 			not-assembly
+			boolean?-assembly
 			car-assembly
 			cdr-assembly
 			char?-assembly
@@ -734,78 +1470,48 @@ L_denominator:
 			plus-assembly
 			numerator-assembly
 			denominator-assembly
-			"\n;; End of library functions \n\n")))
+			mul-assembly
+			div-assembly
+			subtract-assembly
+			remainder-assembly
+			char->integer-assmebly
+			cons-assembly
+			list-assembly
+			make-vector-assembly
+			vector-assembly
+			vector-length-assembly
+			vector-ref-assembly
+			vector-set!-assembly
+			make-string-assembly
+			string-length-assembly
+			string-ref-assembly
+			string-set!-assembly
+			"\n;; End of assembly library functions \n\n")))
 
 
 (define get-scheme-impls
-"")
-;"
-;(define denominator cdr)
-;(define zero? (lambda (x) (and (number? x) (= 0 x))))
-;(define rational? (lambda (x) (and (number? x) (not (integer? x))))
-;(define not (lambda (x) (if (eq? x #f) #t #f)))
-;(define map (lambda (func lst) (if (null? lst) '() (cons (func (car lst)) (map func (cdr lst))))))
-
-;(define length (lambda (lst) (if (null? lst) 0 (+ 1 (length (cdr lst))))))
-
-;(define regular-append
-;     (lambda (l m)
-;         (if (null? l)
-;             m
-;             (cons (car l) (regular-append (cdr l) m)))))
+	'((define integer->char char->integer)
+	(define rational? (lambda (x) (and (number? x) (not (integer? x)))))
+	(define zero? (lambda (x) (and (number? x) (= 0 x))))
+	(define map (lambda (f l) (if (null? l) '() (cons (f (car l)) (map f (cdr l))))))
+	(define regular-append
+    	(lambda (l m)
+        	(if (null? l)
+            	m
+             	(cons (car l) (regular-append (cdr l) m)))))
              
-;(define append-helper
-;    (lambda (x y)
-;        (if (null? y)
-;            x
-;            (regular-append x (append-helper (car y) (cdr y))))))
+	(define append-helper
+	    (lambda (x y)
+	        (if (null? y)
+	            x
+	            (regular-append x (append-helper (car y) (cdr y))))))
 
-;(define append
-;    (lambda lst
-;       	(cond 
-;	        ((null? lst) '())
-;	        ((null? (cdr lst)) (car lst))
-;	        ((= 2 (cdr (cdr lst))) (regular-append (car lst) (car (cdr lst))))
-;	        (else 
-;	            (append-helper (car lst) (cdr lst))))))
-;")
-
-(define boolean?-assembly
-"
-p_bool:
-	cmp	rax, 1 						; loading params in current lambda (n)
-	je e_0
-	mov r10, rax
-	add rax, 4
-	sal rax, 3
-	mov r8, rax
-	add r8, rbp
-	mov r9, rcx
-	add r9, rax
-	mov r9, qword[r8] 	; PARAMi
-	mov rax, r10
-	inc rax
-	jmp p_bool
-
-CL_bool:
-	mov rdi, 16
-	call malloc
-	MAKE_LITERAL_CLOSURE rax, rbx, B_bool
-
-	jmp L_bool
-B_bool:
-	push rbp
-    mov rbp, rsp
-    mov rax, qword[rbp + 4*8]
-    TYPE rax
-    cmp rax, T_BOOL
-    jmp true
-    mov rax, qword[const_2]
-    jmp L_bool
-true:
-	mov rax, qword[const_3]
-L_bool:
-	leave
-	ret
-	")
+	(define append
+	    (lambda lst
+	       	(cond 
+		        ((null? lst) '())
+		        ((null? (cdr lst)) (car lst))
+		        ((= 2 (cdr (cdr lst))) (regular-append (car lst) (car (cdr lst))))
+		        (else 
+		            (append-helper (car lst) (cdr lst))))))))
 

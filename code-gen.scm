@@ -34,6 +34,7 @@ main:
 (define find-in-fvar-list-helper
 	(lambda (fvar-list fvar)
 		(let ((current (car fvar-list)))
+;			(display (format "looking for ~A\n" fvar))
 			(if (eq? fvar (cadr current))
 				(car current)
 				(find-in-fvar-list-helper (cdr fvar-list) fvar)))))
@@ -127,7 +128,7 @@ main:
 				(code-gen-helper test constants-table env-depth)
 				(format "    cmp rax, SOB_FALSE\n    je  if_f_~A\n" index)
 				(code-gen-helper test-true constants-table env-depth)
-				(format "    jmp L_if_~A\nif_f_~A" index index)
+				(format "    jmp L_if_~A\nif_f_~A:\n" index index)
 				(code-gen-helper test-false constants-table env-depth)
 				(format "L_if_~A:\n" index)))))
 
@@ -161,7 +162,6 @@ main:
 		(let 
 			((major (caddr bvar))
 			(minor (cadddr bvar)))
-			(display "bvar\n")
 			(format "
 	mov rax, qword [rbp + 2*8]
 	mov rax, qword [rax + ~A*8]
@@ -253,7 +253,8 @@ main:
 
 (define copy-params-from-stack
 	(lambda (index len)
-		(format "	mov rax, 0
+		(format 
+"	mov rax, 0
 p_~A:
 	cmp	rax, ~A 						; loading params in current lambda (n)
 	je  e_~A
@@ -275,21 +276,15 @@ p_~A:
 		(format"
 e_~A:
 	mov [rbx], rcx
-	mov rax, 0
-	mov r8, rbp		; set up pointers for loop
-	mov r9, rbx
-	add r9, 8
+	mov r9, 0
+	mov r8, qword [rbp + 2*8]
 
 e_loop_~A:	
-	cmp rax, ~A ; setting up env extension (m)
+	cmp r9, ~A ; setting up env extension (m)
 	je  CL_~A
-	mov r10, rax	; save rax for later
-	mov [r9], r8	; rbx[(i+1)*8] = rbp[i*8]
-	add rax, 1
-	sal rax, 3
-	add r8, rax
-	add r9, rax
-	mov rax, r10	; restore rax
+	mov rdx, qword [r8 + 8*r9]
+	inc r9
+	mov qword [rbx + 8*r9], rdx
 	jmp e_loop_~A
 "
 		index index env-depth index index)))
@@ -323,7 +318,6 @@ N_F_loop_~A:
 	call malloc
 	mov qword[rax], r12
 	mov r12, rax
-
 	mov rdi, 8
 	call malloc
 	MAKE_MALLOC_LITERAL_PAIR rax, r12, r13	
