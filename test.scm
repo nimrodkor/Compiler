@@ -153,5 +153,14 @@ make-string
 (string-set! nim 0 #\n)
 nim
 
+(append (list 1 2 3) (list 4 5 6))
+(zero? 0)
+(zero? (- 1 1))
+(zero? 3)
+(zero? #\a)
+(map zero? (list 0 3 0 2 (* 1 0) (/ 0 2) #\a))
+(map rational? (list 0 3 0 2 (* 1 0) (/ 0 2) #\b))
+
+
 ;(((lambda (x) (lambda (y) x)) 4) 3)
 ;(string-length "Nimrod")

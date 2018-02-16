@@ -1491,7 +1491,7 @@ L_string_set:
 
 (define get-scheme-impls
 	'((define integer->char char->integer)
-	(define rational? (lambda (x) (and (number? x) (not (integer? x)))))
+	(define rational? number?)
 	(define zero? (lambda (x) (and (number? x) (= 0 x))))
 	(define map (lambda (f l) (if (null? l) '() (cons (f (car l)) (map f (cdr l))))))
 	(define regular-append
