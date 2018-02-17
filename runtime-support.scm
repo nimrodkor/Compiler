@@ -1,21 +1,22 @@
-
-(define set-up-global-env-with-one-var
+(define set-up-global-env
 "	
 	mov rdi, 8
 	call malloc
-	mov rcx, rax
-	mov rdi, 8
-	call malloc
-	mov rbx, rax
-	mov rax, 4*3
-	add rax, rbp
-	add rcx, rax
-	mov rcx, qword[rax]
-	mov [rbx], rcx
-	mov rax, 8
-	add rbp, rax
-	mov rax, rbp
-	add rax, 8
+	mov r12, rax
+;	mov rdi, 16
+	;call malloc
+	;mov rdi, 8
+	;call malloc
+	;mov rbx, rax
+	;mov rax, 4*3
+	;add rax, rbp
+	;add rcx, rax
+	;mov rcx, qword[rax]
+	;mov [rbx], rcx
+	;mov rax, 8
+	;add rbp, rax
+	;mov rax, rbp
+	;add rax, 8
 ")
 
 (define set-up-global-env-with-n-vars
@@ -47,7 +48,7 @@ e_~A:
 " n tag n tag tag tag)))
 
 (define not-assembly
-(string-append "\n;;  not? ;;\n" set-up-global-env-with-one-var "
+(string-append "\n;;  not? ;;\n" set-up-global-env "
 CL_not:
 	mov rdi, 16
 	call malloc
@@ -75,7 +76,7 @@ L_not:
 "))
 
 (define car-assembly
-	(string-append "\n;;  car ;;\n" set-up-global-env-with-one-var
+	(string-append "\n;;  car ;;\n" set-up-global-env
 "
 CL_car:
 	mov rdi, 16
@@ -98,7 +99,7 @@ L_car:
 "))
 
 (define cdr-assembly
-	(string-append "\n;;  cdr ;;\n"set-up-global-env-with-one-var
+	(string-append "\n;;  cdr ;;\n" set-up-global-env
 "
 CL_cdr:
 	mov rdi, 16
@@ -121,7 +122,7 @@ L_cdr:
 "))
 
 (define char?-assembly
-	(string-append "\n;;  char? ;;\n"set-up-global-env-with-one-var
+	(string-append "\n;;  char? ;;\n" set-up-global-env
 "
 CL_char:
 	mov rdi, 16
@@ -150,7 +151,7 @@ L_char:
 "))
 
 (define integer?-assembly
-	(string-append "\n;;  integer? ;;\n"set-up-global-env-with-one-var
+	(string-append "\n;;  integer? ;;\n" set-up-global-env
 "
 CL_integer:
 	mov rdi, 16
@@ -179,7 +180,7 @@ L_integer:
 "))
 
 (define boolean?-assembly
-	(string-append "\n;;  boolean? ;;\n" set-up-global-env-with-one-var
+	(string-append "\n;;  boolean? ;;\n" set-up-global-env
 "
 CL_bool:
 	mov rdi, 16
@@ -208,7 +209,7 @@ L_bool:
 	"))
 
 (define null?-assembly
-	(string-append "\n;;  null? ;;\n"set-up-global-env-with-one-var
+	(string-append "\n;;  null? ;;\n" set-up-global-env
 "
 CL_null:
 	mov rdi, 16
@@ -237,7 +238,7 @@ L_null:
 "))
 
 (define number?-assembly
-	(string-append "\n;;  number? ;;\n" set-up-global-env-with-one-var
+	(string-append "\n;;  number? ;;\n" set-up-global-env
 "
 CL_number:
 	mov rdi, 16
@@ -268,7 +269,7 @@ L_number:
 "))
 
 (define pair?-assembly
-	(string-append "\n;;  pair? ;;\n" set-up-global-env-with-one-var
+	(string-append "\n;;  pair? ;;\n" set-up-global-env
 "
 CL_pair:
 	mov rdi, 16
@@ -297,7 +298,7 @@ L_pair:
 "))
 
 (define procedure?-assembly
-	(string-append "\n;;  procedure? ;;\n" set-up-global-env-with-one-var
+	(string-append "\n;;  procedure? ;;\n" set-up-global-env
 "
 CL_procedure:
 	mov rdi, 16
@@ -326,7 +327,7 @@ L_procedure:
 "))
 
 (define string?-assembly
-	(string-append "\n;;  string? ;;\n" set-up-global-env-with-one-var
+	(string-append "\n;;  string? ;;\n" set-up-global-env
 "
 CL_string:
 	mov rdi, 16
@@ -355,7 +356,7 @@ L_string:
 "))
 
 (define symbol?-assembly
-(string-append "\n;;  symbol? ;;\n" set-up-global-env-with-one-var
+(string-append "\n;;  symbol? ;;\n" set-up-global-env
 "
 CL_symbol:
 	mov rdi, 16
@@ -384,7 +385,7 @@ L_symbol:
 "))
 
 (define vector?-assembly
-	(string-append "\n;;  vector? ;;\n" set-up-global-env-with-one-var
+	(string-append "\n;;  vector? ;;\n" set-up-global-env
 "
 CL_vector:
 	mov rdi, 16
@@ -413,7 +414,7 @@ L_vector:
 "))
 
 (define set-car!-assembly
-	(string-append "\n;;   set-car!   ;;\n" (set-up-global-env-with-n-vars 2 "set_car")
+	(string-append "\n;;   set-car!   ;;\n" set-up-global-env
 "
 CL_set_car:
 	mov rdi, 16
@@ -445,7 +446,7 @@ L_set_car:
 "))
 
 (define set-cdr!-assembly
-	(string-append "\n;;   set-cdr!   ;;\n" (set-up-global-env-with-n-vars 2 "set_cdr")
+	(string-append "\n;;   set-cdr!   ;;\n" set-up-global-env
 "
 CL_set_cdr:
 	mov rdi, 16
@@ -477,7 +478,7 @@ L_set_cdr:
 "))
 
 (define equals-assembly
-	(string-append "\n;;   =   ;;\n" set-up-global-env-with-one-var 
+	(string-append "\n;;   =   ;;\n" set-up-global-env 
 "
 CL_equals:
 	mov rdi, 16
@@ -520,7 +521,7 @@ L_equals:
 "))
 
 (define greater-than-assembly
-	(string-append set-up-global-env-with-one-var 
+	(string-append set-up-global-env 
 "
 CL_gt:
 	mov rdi, 16
@@ -564,7 +565,7 @@ L_gt:
 "))
 
 (define less-than-assembly
-	(string-append  "\n;;   <   ;;\n" set-up-global-env-with-one-var 
+	(string-append  "\n;;   <   ;;\n" set-up-global-env 
 "
 CL_lt:
 	mov rdi, 16
@@ -608,7 +609,7 @@ L_lt:
 "))
 
 (define plus-assembly
-	(string-append  "\n;;   +   ;;\n" set-up-global-env-with-one-var
+	(string-append  "\n;;   +   ;;\n" set-up-global-env
 "
 CL_plus:
 	mov rdi, 16
@@ -693,7 +694,7 @@ L_plus:
 "))
 
 (define numerator-assembly
-	(string-append  "\n;;   numerator   ;;\n" set-up-global-env-with-one-var
+	(string-append  "\n;;   numerator   ;;\n" set-up-global-env
 "
 CL_numerator:
 	mov rdi, 16
@@ -717,7 +718,7 @@ L_numerator:
 "))
 
 (define denominator-assembly
-	(string-append  "\n;;   denominator   ;;\n" set-up-global-env-with-one-var
+	(string-append  "\n;;   denominator   ;;\n" set-up-global-env
 "
 CL_denominator:
 	mov rdi, 16
@@ -741,7 +742,7 @@ L_denominator:
 "))
 
 (define mul-assembly
-	(string-append  "\n;;   mul   ;;\n" set-up-global-env-with-one-var
+	(string-append  "\n;;   mul   ;;\n" set-up-global-env
 "
 CL_mul:
 	mov rdi, 16
@@ -820,7 +821,7 @@ L_mul:
 "))
 
 (define div-assembly
-	(string-append  "\n;;   /   ;;\n" set-up-global-env-with-one-var
+	(string-append  "\n;;   /   ;;\n" set-up-global-env
 "
 CL_div:
 	mov rdi, 16
@@ -902,7 +903,7 @@ L_div:
 "))
 
 (define subtract-assembly
-	(string-append  "\n;;   -   ;;\n" set-up-global-env-with-one-var
+	(string-append  "\n;;   -   ;;\n" set-up-global-env
 "
 CL_sub:
 	mov rdi, 16
@@ -989,7 +990,7 @@ L_sub:
 "))	
 
 (define remainder-assembly
-	(string-append  "\n;;   remainder   ;;\n" (set-up-global-env-with-n-vars 2 "remainder")
+	(string-append  "\n;;   remainder   ;;\n" set-up-global-env
 "
 CL_remainder:
 	mov rdi, 16
@@ -1027,7 +1028,7 @@ L_remainder:
 "))
 
 (define char->integer-assmebly
-	(string-append "\n;;    char->integer   ;;\n" set-up-global-env-with-one-var
+	(string-append "\n;;    char->integer   ;;\n" set-up-global-env
 "
 CL_char_integer:
 	mov rdi, 16
@@ -1052,7 +1053,7 @@ L_char_integer:
 "))
 
 (define cons-assembly
-	(string-append "\n;;    cons   ;;\n" (set-up-global-env-with-n-vars 2 "cons")
+	(string-append "\n;;    cons   ;;\n" set-up-global-env
 "
 CL_cons:
 	mov rdi, 16
@@ -1086,7 +1087,7 @@ L_cons:
 "))
 
 (define list-assembly
-	(string-append "\n;;;     list     ;;;\n" set-up-global-env-with-one-var
+	(string-append "\n;;;     list     ;;;\n" set-up-global-env
 "
 CL_list:
 	mov rdi, 16
@@ -1144,7 +1145,7 @@ L_list:
 "))
 
 (define make-vector-assembly
-	(string-append "\n;;;     make-vector     ;;;\n" set-up-global-env-with-one-var
+	(string-append "\n;;;     make-vector     ;;;\n" set-up-global-env
 "
 CL_make_vector:
 	mov rdi, 16
@@ -1194,7 +1195,7 @@ L_make_vector:
 "))
 
 (define vector-assembly
-	(string-append "\n;;;     vector     ;;;\n" set-up-global-env-with-one-var
+	(string-append "\n;;;     vector     ;;;\n" set-up-global-env
 "
 CL_vector_create:
 	mov rdi, 16
@@ -1245,7 +1246,7 @@ L_vector_create:
 "))
 
 (define vector-length-assembly
-	(string-append "\n;;;     vector-length     ;;;\n" set-up-global-env-with-one-var
+	(string-append "\n;;;     vector-length     ;;;\n" set-up-global-env
 "
 CL_vector_length:
 	mov rdi, 16
@@ -1268,7 +1269,7 @@ L_vector_length:
 "))
 
 (define vector-ref-assembly
-	(string-append "\n;;;     vector-ref     ;;;\n" (set-up-global-env-with-n-vars 2 "vector_ref")
+	(string-append "\n;;;     vector-ref     ;;;\n" set-up-global-env
 "
 CL_vector_ref:
 	mov rdi, 16
@@ -1286,6 +1287,9 @@ B_vector_ref:
 	VECTOR_ELEMENTS rax
 	add rax, r13
 	mov rax, qword [rax]
+	push qword [rax]
+	call write_sob_if_not_void
+	add rsp, 8
 	leave
 	ret
 L_vector_ref:
@@ -1295,7 +1299,7 @@ L_vector_ref:
 "))
 
 (define vector-set!-assembly
-	(string-append "\n;;;     vector-set     ;;;\n" (set-up-global-env-with-n-vars 3 "vector_set")
+	(string-append "\n;;;     vector-set     ;;;\n" set-up-global-env
 "
 CL_vector_set:
 	mov rdi, 16
@@ -1326,7 +1330,7 @@ L_vector_set:
 "))
 
 (define make-string-assembly
-	(string-append "\n;;;     make-string     ;;;\n" set-up-global-env-with-one-var
+	(string-append "\n;;;     make-string     ;;;\n" set-up-global-env
 "
 CL_make_string:
 	mov rdi, 16
@@ -1365,7 +1369,7 @@ L_make_string:
 "))
 
 (define string-length-assembly
-	(string-append "\n;;;     string-length     ;;;\n" set-up-global-env-with-one-var
+	(string-append "\n;;;     string-length     ;;;\n" set-up-global-env
 "
 CL_string_length:
 	mov rdi, 16
@@ -1389,7 +1393,7 @@ L_string_length:
 "))
 
 (define string-ref-assembly
-	(string-append "\n;;;     string-ref     ;;;\n" (set-up-global-env-with-n-vars 2 "string_ref")
+	(string-append "\n;;;     string-ref     ;;;\n" set-up-global-env
 "
 CL_string_ref:
 	mov rdi, 16
@@ -1417,7 +1421,7 @@ L_string_ref:
 "))
 
 (define string-set!-assembly
-	(string-append "\n;;;     string-set     ;;;\n" (set-up-global-env-with-n-vars 3 "string_set")
+	(string-append "\n;;;     string-set     ;;;\n" set-up-global-env
 "
 CL_string_set:
 	mov rdi, 16
@@ -1443,6 +1447,80 @@ L_string_set:
 	mov rax, qword [rax]
 	mov qword [fvar_37], rax
 	mov rax, SOB_VOID
+"))
+
+(define symbol->string-assembly
+	(string-append "\n;;;     symbol->string     ;;;\n" set-up-global-env
+"
+CL_symbol_string:
+	mov rdi, 16
+	call malloc
+	MAKE_LITERAL_CLOSURE rax, rbx, B_symbol_string
+
+	jmp L_symbol_string
+B_symbol_string:
+	push rbp
+	mov rbp, rsp
+	mov rax, qword [rbp + 4*8]
+	SYMBOL_STRING rax
+	leave
+	ret
+L_symbol_string:
+	mov rax, qword [rax]
+	mov qword [fvar_38], rax
+	mov rax, SOB_VOID
+"))
+
+(define eq?-assembly
+	(string-append "\n;;;     eq?     ;;;\n" set-up-global-env
+"
+CL_eq:
+	mov rdi, 16
+	call malloc
+	MAKE_LITERAL_CLOSURE rax, rbx, B_eq
+
+	jmp L_eq
+B_eq:
+	push rbp
+	mov rbp, rsp
+	mov rax, qword [rbp + 4*8]
+	mov rbx, qword [rbp + 5*8]
+	cmp rax, rbx
+	jne B_eq_false
+	mov rax, SOB_TRUE
+	jmp B_eq_end
+B_eq_false:
+	mov rax, SOB_FALSE
+B_eq_end:
+	leave
+	ret
+L_eq:
+	mov rax, qword [rax]
+	mov qword [fvar_39], rax
+	mov rax, SOB_VOID
+"))
+
+(define string->symbol-assembly
+	(string-append "\n;;;    string-> symbol ;;; \n" set-up-global-env
+	"
+CL_string_symbol:
+	mov rdi, 16
+	call malloc
+	MAKE_LITERAL_CLOSURE rax, rbx, B_string_symbol
+
+	jmp L_eq
+B_string_symbol:
+	push rbp
+	mov rbp, rsp
+	mov rax, qword [rbp + 4*8]	; pointer to a string
+	cmp rax, rbx
+	leave
+	ret
+L_string_symbol:
+	mov rax, qword [rax]
+	mov qword [fvar_40], rax
+	mov rax, SOB_VOID
+
 "))
 
 (define get-runtime-assembly-functions
@@ -1486,6 +1564,9 @@ L_string_set:
 			string-length-assembly
 			string-ref-assembly
 			string-set!-assembly
+			symbol->string-assembly
+			eq?-assembly
+			string->symbol-assembly
 			"\n;; End of assembly library functions \n\n")))
 
 

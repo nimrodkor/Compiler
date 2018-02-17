@@ -24,8 +24,14 @@ main:
 					((pair? x) (find-type-in-list 'T_PAIR (list (car x) (cdr x)) in-list))
 					((vector? x) (find-type-in-list 'T_VECTOR (vector->list x) in-list))
 					((string? x) (find-type-in-list 'T_STRING (convert-string-to-ascii-list x) in-list))
+					((symbol? x) (find-symbol x in-list))
 					(#t (begin (display (format "code-gen: need to support ~A\n" x)) #f))))
 			in-list)))
+
+(define find-symbol
+	(lambda (sym in-list)
+		(let ((sym-string-ascii (convert-string-to-ascii-list (symbol->string sym))))
+			(+ 1 (find-type-in-list 'T_STRING sym-string-ascii in-list)))))
 
 (define find-in-fvar-list
 	(lambda (fvar)
@@ -72,10 +78,11 @@ main:
 		    (#t (display (format "Code of type ~A is not yet supported" (car code)))))))
 
 (define code-gen
-	(lambda (scheme-code constants-table global-variable-table)
+	(lambda (scheme-code constants-table global-variable-table symbol-list)
 		(set! fvars global-variable-table)
 		(string-append
 			code-header
+			(create-symbol-linked-list symbol-list (length constants-table))
 			(get-runtime-assembly-functions)
 			(fold-right
 				string-append
@@ -86,6 +93,44 @@ main:
 											"    push rax\n    call write_sob_if_not_void\n    add rsp, 1*8\n"))
 					scheme-code))
 			)))
+
+(define create-symbol-linked-list
+	(lambda (symbol-list symbol-list-pointer)
+		(string-append
+			make-empty-list
+			(create-symbol-list-node symbol-list)
+			"  ;;;    FINISHED SYMBOL LIST ;;;;\n")))
+
+(define make-empty-list
+	"
+	;;;;     Creating symbol list    ;;;;
+	mov rax, symbol_table")
+
+(define create-symbol-list-node
+	(lambda (sym-addr-list)
+		(if (null? sym-addr-list)
+			""
+			(string-append 
+				(format "
+	push rax
+	mov rdi, 8
+	call malloc
+	mov r12, rax
+	sub r12, start_of_data
+	pop rbx
+	mov r13, rbx
+	mov rbx, qword [rbx]
+	sar rbx, TYPE_BITS
+	add rbx, r12
+	sal rbx, TYPE_BITS
+	mov qword [r13], rbx
+
+	mov rbx, const_~A
+	sub rbx, start_of_data
+	sal rbx, 34				; magic number for DATA_UPPER
+	mov qword [rax], rbx
+		" (car sym-addr-list))
+				(create-symbol-list-node (cdr sym-addr-list))))))
 
 (define code-gen-const
 	(lambda (const constants-table)
@@ -135,6 +180,7 @@ main:
 (define code-gen-define
 	(lambda (define-exp constants-table env-depth) 
 		(string-append
+			(format "\n    ;;;    ~A    ;;;;\n\n" (cadadr define-exp))
 			(code-gen-helper (caddr define-exp) constants-table env-depth)
 			(format "    mov qword [fvar_~A], rax\n" (find-in-fvar-list (cadadr define-exp)))
 			"    mov rax, SOB_VOID\n")))
@@ -233,7 +279,8 @@ main:
 
 (define env-mallocs
 	(lambda (n env-depth)
-		(format "    mov rdi, 8*~A 				; 8*n
+		(format "    
+	mov rdi, 8*~A 				; 8*n
 	call malloc
 	mov rcx, rax
 	mov rdi, 8*~A 				; 8*(m + 1)
@@ -245,31 +292,65 @@ main:
 (define make-env
 	(lambda (params-list lambda-index env-depth)
 		(let ((len (length params-list)))
-			(string-append
-				(env-mallocs len env-depth)
-				(copy-params-from-stack lambda-index len)
-				(copy-envs-from-stack lambda-index env-depth)
-				(make-closure lambda-index)))))
+			(if (= 0 env-depth)
+				(first-lambda lambda-index)
+				(string-append    ;; not of depth 0, need to copy vars
+					(extend-envs env-depth lambda-index)
+					(copy-params-from-stack lambda-index len)
+					(make-closure lambda-index))))))
+
+(define first-lambda
+	(lambda (index)
+		(format "
+	mov rdi, 8
+	call malloc
+	mov r12, rax
+	mov rdi, 16
+	call malloc
+	MAKE_LITERAL_CLOSURE rax, r12, B_~A
+	jmp L_~A
+" index index)))
+
+(define extend-envs
+	(lambda (depth index)
+		(format "
+	mov rdi, 8*~A
+	call malloc
+	mov rbx, rax
+	mov rcx, [rbp + 2*8]
+	mov r9, ~A
+	mov r8, 0
+
+e_loop_~A:
+	cmp r8, r9
+	je  e_loop_end_~A
+	mov r12, qword [rcx + r8*8]
+	inc r8
+	mov qword [rbx + 8*r8], r12
+	jmp e_loop_~A
+e_loop_end_~A:
+" (+ 1 depth) (+ 1 depth) index index index index)))
 
 (define copy-params-from-stack
 	(lambda (index len)
 		(format 
-"	mov rax, 0
+"	push rbx
+	mov rdi, 8*~A
+	call malloc
+	mov rcx, rax
+	pop rbx
+	mov r8, 0
 p_~A:
-	cmp	rax, ~A 						; loading params in current lambda (n)
-	je  e_~A
-	mov r10, rax
-	add rax, 4
-	sal rax, 3
-	mov r8, rax
-	add r8, rbp
-	mov r9, rcx
-	add r9, rax
-	mov r9, qword[r8] 	; PARAMi
-	mov rax, r10
-	inc rax
-	jmp p_~A"
-		index len index index)))
+	cmp	r8, ~A 						; loading params in current lambda (n)
+	je  p_loop_end_~A
+	mov rdi, qword [rbp + 8*(r8 + 4)]
+	mov qword [rcx + 8*r8], rdi
+	inc r8
+	jmp p_~A
+
+p_loop_end_~A:
+"
+		len index len index index index)))
 
 (define copy-envs-from-stack
 	(lambda (index env-depth)
@@ -334,8 +415,11 @@ N_F_~A:
 	(lambda (index)
 		(format "
 CL_~A:
+	mov qword [rbx], rcx
+	push rbx
 	mov rdi, 16
 	call malloc
+	pop rbx
 	MAKE_LITERAL_CLOSURE rax, rbx, B_~A
 
 	jmp L_~A

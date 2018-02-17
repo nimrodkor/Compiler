@@ -26,6 +26,8 @@
 
 %define MAKE_LITERAL(type, lit) ((lit << TYPE_BITS) | type)
 
+%define MAKE_LITERAL_SYMBOL(address) (((address - start_of_data) << TYPE_BITS) | T_SYMBOL)
+
 %macro TYPE 1
 	and %1, ((1 << TYPE_BITS) - 1) 
 %endmacro
@@ -93,6 +95,26 @@ shl qword [rax], TYPE_BITS
 or qword [rax], T_PAIR
 pop rbx
 pop rax
+%endmacro
+
+;;; MAKE_SYMBOL_LIST_NODE target-address, symbol-address
+%macro MAKE_SYMBOL_LIST_NODE 2
+push rax
+push rbx
+mov rax, %1
+mov qword [rax], %2
+sub qword [rax], start_of_data
+shl qword [rax], ((WORD_SIZE - TYPE_BITS) >> 1)
+shl qword [rax], TYPE_BITS
+pop rbx
+pop rax
+%endmacro
+
+%macro SYMBOL_STRING 1
+mov rax, %1
+DATA rax
+add rax, start_of_data
+mov rax, qword [rax]
 %endmacro
 
 %macro DENOMINATOR 1
@@ -508,6 +530,48 @@ section .data
 .fs_newline:
 	db "\n", 0
 
+write_sob_symbol:
+	push rbp
+	mov rbp, rsp
+	mov rax, 0
+	mov rdi, .quote
+	call printf
+	mov rax, qword [rbp + 8 + 1*8]
+	SYMBOL_STRING rax
+	mov rcx, rax
+	STRING_LENGTH rcx
+	STRING_ELEMENTS rax
+
+.loop:
+	cmp rcx, 0
+	je .done
+	mov bl, byte [rax]
+	and rbx, 0xff
+
+	mov rdi, .fs_simple_char
+	mov rsi, rbx
+	push rax
+	push rcx
+	mov rax, 0
+	call printf
+	pop rcx
+	pop rax
+
+	dec rcx
+	inc rax
+	jmp .loop
+
+.done:
+	leave
+	ret
+
+section .data
+.quote:
+	db "'", 0
+.fs_simple_char:
+	db "%c", 0
+
+
 write_sob_pair:
 	push rbp
 	mov rbp, rsp
@@ -645,13 +709,7 @@ section	.data
 .fs_space:
 	db " ", 0
 
-write_sob_symbol:
-	push rbp
-	mov rsp, rbp
 
-	leave
-	ret
-	
 write_sob_fraction:
 	push rbp
 	mov rbp, rsp

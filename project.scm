@@ -120,6 +120,7 @@
 		((star <sexpr>) s
 			(lambda (m r)
 				(map (lambda (e)
+;					(display e) (newline)
 					(annotate-tc
 						(pe->lex-pe
 							(box-set
@@ -135,7 +136,13 @@
 			((and (not (integer? sexpr)) (number? sexpr)) (list (numerator sexpr) (denominator sexpr) sexpr))
 			((pair? sexpr) (append (extract-sub-consts-from-pair sexpr) (list sexpr)))
 			((vector? sexpr) (append (extract-sub-consts-from-vector sexpr) (list sexpr)))
+			((symbol? sexpr) (append (extract-string-from-symbol sexpr) (list sexpr)))
 		    (#t sexpr))))
+
+(define extract-string-from-symbol
+	(lambda (sexpr)
+;		(display (format "sexpr: ~A, symbol string: ~A\n" sexpr (symbol->string sexpr)))
+		(list (symbol->string sexpr))))
 
 (define extract-sub-consts-from-vector
 	(lambda (vec)
@@ -164,7 +171,7 @@
 
 (define find-consts
 	(lambda (parse-list)
-;		(display (format "parse-list: ~A\n" parse-list)) (newline)
+		;(display (format "parse-list: ~A\n" parse-list)) (newline)
 		(flatten-once-max 
 			(map
 				(lambda (sexpr) 
@@ -191,38 +198,44 @@
 			'()
 			(let* 
 				((const (car const-list))
+				(address (get-address))
 				(const-label 
 				(cond 
 					((null? const) 
-						(list (get-address) 'T_NIL '()))
+						(list address 'T_NIL '()))
 					((eq? const (void))
-						(list (get-address) 'T_VOID 0))
+						(list address 'T_VOID 0))
     				((integer? const)
-    					(list (get-address) 'T_INTEGER const))
+    					(list address 'T_INTEGER const))
     				((number? const)
-						(list (get-address) 'T_FRACTION (numerator const) (denominator const)))
+						(list address 'T_FRACTION (numerator const) (denominator const)))
 					((eq? #f const)
-    					(list (get-address) 'T_BOOL 0))
+    					(list address 'T_BOOL 0))
     				((eq? #t const) 
-    					(list (get-address) 'T_BOOL 1))
+    					(list address 'T_BOOL 1))
     				((char? const)
-    					(list (get-address) 'T_CHAR (char->integer const)))
+    					(list address 'T_CHAR (char->integer const)))
     				((string? const)
-    					(append (list (get-address)) (list 'T_STRING) (convert-string-to-ascii-list const)))
+    					(append (list address) (list 'T_STRING) (convert-string-to-ascii-list const)))
     				((symbol? const)
-    					(list (get-address) 'T_SYMBOL const))
+    					(add-to-symbol-strings-list address)
+    					(list address 'T_SYMBOL (- address 1)))
     				((pair? const)
-    					(list (get-address) 'T_PAIR (car const) (cdr const)))
+    					(list address 'T_PAIR (car const) (cdr const)))
     				((vector? const)
-    					(append (list (get-address)) (list 'T_VECTOR) (vector->list const)))	
+    					(append (list address) (list 'T_VECTOR) (vector->list const)))	
 					(#t 'undef))))
 				(cons const-label (create-const-list-helper (cdr const-list)))))))
 
+(define symbol-list '())
+
+(define add-to-symbol-strings-list
+	(lambda (symbol-addr)
+		(set! symbol-list (cons symbol-addr symbol-list))))
+
 (define convert-string-to-ascii-list
 	(lambda (str)
-		(map
-			char->integer
-			(string->list str))))
+		(map char->integer (string->list str))))
 
 (define make-const-table
 	(lambda (parsed-code)
@@ -298,13 +311,21 @@
 			(car const-record) 
 			(create-string-creation-args (cddr const-record)))))
 
+(define last-symbol-address 0)
+
+(define convert-symbol-to-assembly 
+	(lambda (const-record const-list) 
+		(format "const_~A:\n    dq MAKE_LITERAL_SYMBOL(const_~A)\n"
+			(car const-record) (caddr const-record))))
+
 (define extract-const-table
 	(lambda (const-table)
+		(set! last-symbol-address 0)
 		(string-append
 			"section .data\nstart_of_data:\n" 
 			(fold-right
 				string-append
-				""
+				"symbol_table:\n    dq 0		; symbol-table pointer\n"
 				(map
 					(lambda (const-record) 
 						(let ((type (cadr const-record)))
@@ -317,6 +338,9 @@
 							    ((equal? 'T_PAIR type) (convert-pair-to-assembly const-record const-table))
 							    ((equal? 'T_VECTOR type) (convert-vector-to-assembly const-record const-table))
 							    ((equal? 'T_STRING type) (convert-string-to-assembly const-record const-table))
+							    ((equal? 'T_SYMBOL type) 
+							    	(begin (set! last-symbol-address (caddr const-record))
+							    		(convert-symbol-to-assembly const-record const-table)))
 								(#t 
 									(display (format "extract-cons-table: The const type ~A is not yet supported for creation\n" type))))))
 					const-table))
@@ -338,17 +362,17 @@
 			((parsed-scheme-code 
 				(pipeline (read-from-file in-file)))
 			(constants-table (make-const-table parsed-scheme-code))
-			(symbol-table (filter (lambda (x) #t) constants-table))
 			(global-variable-table (make-global-variable-table '() (extract-fvars-from-code parsed-scheme-code))))
-;			(display (format "Constants table: ~A\n" constants-table))
+			(display (format "Constants table: ~A\n" constants-table))
 ;			(display (format "Parsed code: ~A\n" parsed-scheme-code))
 ;			(display (format "G-V-T: ~A\n" global-variable-table))
+			(display (format "Symbol-list: ~A\n" symbol-list))
 			(write-to-file out-file
 				(string-append 
 					prolog 
 					(extract-const-table constants-table)
 					(extract-fvar-table global-variable-table)
-					(code-gen parsed-scheme-code constants-table global-variable-table)
+					(code-gen parsed-scheme-code constants-table global-variable-table symbol-list)
 					epilog
 					))
 			)))
@@ -374,7 +398,7 @@
 				(list 'not 'car 'cdr 'char? 'integer? 'null? 'number? 'pair? 'procedure? 'string? 'symbol? 'vector? 
 				'set-car! 'set-cdr! '= '> '< '+ 'numerator 'denominator 'boolean? '* '/ '- 'remainder 'char->integer 
 				'integer->char 'cons 'list 'make-vector 'vector 'vector-length 'vector-ref 'vector-set! 
-				'make-string 'string-length 'string-ref 'string-set!)
+				'make-string 'string-length 'string-ref 'string-set! 'symbol->string 'eq? 'string->symbol)
 				(map cadadr
 					(filter 
 						(lambda (x) (and (list? x) (not (null? x)) (eq? 'define (car x))))
@@ -382,7 +406,7 @@
 
 (define extract-fvar-table
 	(lambda (fvar-list)
-		(display (format "fvar-list: ~A\n" fvar-list))
+;		(display (format "fvar-list: ~A\n" fvar-list))
 		(fold-right
 			string-append
 			"\n"
