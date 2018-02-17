@@ -1512,8 +1512,60 @@ CL_string_symbol:
 B_string_symbol:
 	push rbp
 	mov rbp, rsp
-	mov rax, qword [rbp + 4*8]	; pointer to a string
-	cmp rax, rbx
+	mov r15, qword [rbp + 4*8]	  ; pointer to a string
+	mov r14, symbol_table
+	mov rax, qword [r14] 		; rax is new node
+B_string_symbol_loop:
+	DATA_LOWER rax
+	cmp rax, 0
+	je  B_string_symbol_not_found
+
+	add rax, start_of_data
+	mov r14, rax
+	mov rax, qword [rax]
+	mov rbx, rax
+	DATA_UPPER rbx
+	add rbx, start_of_data
+	mov rbx, qword [rbx]			; rbx is symbol
+	mov rcx, rbx
+	mov r9, rax
+	SYMBOL_STRING rcx
+	mov rcx, rax
+	mov rax, r9
+	cmp rcx, r15
+	je  B_string_symbol_found
+	jmp B_string_symbol_loop
+B_string_symbol_found:
+	mov rax, rbx
+	jmp B_string_symbol_end
+B_string_symbol_not_found:
+	; r14 - pointer to last node, r15 - new symbol string 
+	mov rdi, 8
+	call malloc 			; create new symbol
+	mov qword [rax], r15
+	sub rax, start_of_data
+	sal rax, TYPE_BITS
+	or  rax, T_SYMBOL
+	mov r13, rax			; r13 = symbol
+	push rax
+	mov rdi, 8
+	call malloc
+	mov qword [rax], r13
+	mov r13, rax
+	sub r13, start_of_data	; r13 = relative address of symbol
+	sal r13, 34
+	mov rdi, 8
+	call malloc 			; create new node
+	mov qword [rax], r13
+	mov r12, rax			; r12 - pointer to new node
+	sub r12, start_of_data  
+	mov r13, qword [r14]
+	sar r13, TYPE_BITS
+	add r13, r12
+	sal r13, TYPE_BITS
+	mov qword [r14], r13
+	pop rax					; return the symbol register
+B_string_symbol_end:
 	leave
 	ret
 L_string_symbol:

@@ -97,19 +97,6 @@ pop rbx
 pop rax
 %endmacro
 
-;;; MAKE_SYMBOL_LIST_NODE target-address, symbol-address
-%macro MAKE_SYMBOL_LIST_NODE 2
-push rax
-push rbx
-mov rax, %1
-mov qword [rax], %2
-sub qword [rax], start_of_data
-shl qword [rax], ((WORD_SIZE - TYPE_BITS) >> 1)
-shl qword [rax], TYPE_BITS
-pop rbx
-pop rax
-%endmacro
-
 %macro SYMBOL_STRING 1
 mov rax, %1
 DATA rax
