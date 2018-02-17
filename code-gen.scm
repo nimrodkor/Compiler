@@ -113,7 +113,8 @@ main:
 			(string-append 
 				(format "
 	push rax
-	MY_MALLOC 8
+    mov rdi, 8
+	call malloc	
 	mov r12, rax
 	sub r12, start_of_data
 	pop rbx
@@ -236,7 +237,8 @@ main:
 			"
 ; box
     mov r12, rax
-    MY_MALLOC 8
+    mov rdi, 8
+    call malloc
     mov qword[rax], r12
 ")))
 
@@ -313,9 +315,11 @@ main:
 (define env-mallocs
 	(lambda (n env-depth)
 		(format "    
-	MY_MALLOC 8*~A 				; 8*n
+	mov rdi, 8*~A 				; 8*n
+	call malloc
 	mov rcx, rax
-	MY_MALLOC 8*~A 				; 8*n
+	mov rdi, 8*~A 				; 8*n
+	call malloc
 	mov rbx, rax
 "
 		n (+ 1 env-depth))))
@@ -333,17 +337,20 @@ main:
 (define first-lambda
 	(lambda (index)
 		(format "
-	MY_MALLOC 8
+    mov rdi, 8
+	call malloc
 	mov r12, rax
-	MY_MALLOC 16
-	MAKE_LITERAL_CLOSURE rax, r12, B_~A
+    mov rdi, 16
+	call malloc	
+    MAKE_LITERAL_CLOSURE rax, r12, B_~A
 	jmp L_~A
 " index index)))
 
 (define extend-envs
 	(lambda (depth index)
 		(format "
-	MY_MALLOC 8*~A
+	mov rdi, 8*~A
+	call malloc
 	mov rbx, rax
 	mov rcx, [rbp + 2*8]
 	mov r9, ~A
@@ -363,7 +370,8 @@ e_loop_end_~A:
 	(lambda (index len)
 		(format 
 "	push rbx
-	MY_MALLOC 8*~A
+	mov rdi, 8*~A
+	call malloc
 	mov rcx, rax
 	pop rbx
 	mov r8, 0
@@ -415,17 +423,20 @@ N_F_loop_~A:
 	sal r14, 3 				
 	add r14, rbp 			
 	mov r13, qword [r14]	; r14 = rbp + (i+4)*8
-	MY_MALLOC 8
+    mov rdi, 8
+	call malloc	
 	mov qword[rax], r13
 	mov r13, rax
 
 	sub r14, 8				
 	mov r12, qword [r14]	; r14 = rbp + (i+3)*8
-	MY_MALLOC 8
+    mov rdi, 8
+	call malloc	
 	mov qword[rax], r12
 	mov r12, rax
-	MY_MALLOC 8
-	MAKE_MALLOC_LITERAL_PAIR rax, r12, r13	
+    mov rdi, 8
+	call malloc	
+    MAKE_MALLOC_LITERAL_PAIR rax, r12, r13	
 	mov rax, qword [rax]
 	mov qword [r14], rax
 	dec r8
@@ -441,8 +452,9 @@ N_F_~A:
 CL_~A:
 	mov qword [rbx], rcx
 	push rbx
-	MY_MALLOC 16
-	pop rbx
+    mov rdi, 16
+	call malloc	
+    pop rbx
 	MAKE_LITERAL_CLOSURE rax, rbx, B_~A
 
 	jmp L_~A
