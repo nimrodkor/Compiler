@@ -1508,7 +1508,7 @@ CL_string_symbol:
 	call malloc
 	MAKE_LITERAL_CLOSURE rax, rbx, B_string_symbol
 
-	jmp L_eq
+	jmp L_string_symbol
 B_string_symbol:
 	push rbp
 	mov rbp, rsp
