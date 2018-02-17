@@ -54,8 +54,10 @@
 				((eq? type 'T_PAIR) (cons (car raw-value) (cadr raw-value)))
 				((eq? type 'T_VECTOR) (list->vector raw-value))
 				((eq? type 'T_STRING) (convert-ascii-list-to-string raw-value))
-				((eq? type 'T_SYMBOL) (cadddr const-record))
+				((eq? type 'T_SYMBOL) (caddr const-record))
 				((eq? type 'T_BOOL) (if (= (car raw-value) 1) #t #f))
+				((eq? type 'T_FRACTION) (/ (caddr const-record) (cadddr const-record)))
+				((eq? type 'T_CHAR) (integer->char (caddr const-record)))
 				(#t  (car raw-value)))
 			)))
 
@@ -223,7 +225,7 @@
     					(append (list address) (list 'T_STRING) (convert-string-to-ascii-list const)))
     				((symbol? const)
     					(add-to-symbol-strings-list address)
-    					(list address 'T_SYMBOL (- address 1) const))
+    					(list address 'T_SYMBOL const))
     				((pair? const)
     					(list address 'T_PAIR (car const) (cdr const)))
     				((vector? const)
@@ -296,8 +298,13 @@
 
 (define create-vector-creation-args
 	(lambda (val-places)
-		(let ((format-string (fold-left string-append " " (map (lambda (place) (format "const_~A, " place)) val-places))))
-			(substring format-string 0 (- (string-length format-string) 2)))))
+			(let 
+				((format-string 
+					(fold-left 
+						string-append 
+						" " 
+						(map (lambda (place) (format "const_~A, " place)) val-places))))
+				(substring format-string 0 (- (string-length format-string) 2)))))
 
 (define convert-vector-to-assembly
 	(lambda (const-record const-list)
@@ -309,8 +316,10 @@
 
 (define create-string-creation-args
 	(lambda (ascii-list)
+		(if (< (length ascii-list) 1)
+			(begin (display (format "ascii: ~A\n" ascii-list)) "")
 		(let ((format-string (fold-left string-append " " (map (lambda (ascii) (format "~A, " ascii)) ascii-list))))
-			(substring format-string 0 (- (string-length format-string) 2)))))
+			(substring format-string 0 (- (string-length format-string) 2))))))
 
 (define convert-string-to-assembly
 	(lambda (const-record const-list)
@@ -322,8 +331,9 @@
 
 (define convert-symbol-to-assembly 
 	(lambda (const-record const-list) 
+		(begin (display (format "const_record: ~A\n" const-record))
 		(format "const_~A:\n    dq MAKE_LITERAL_SYMBOL(const_~A)\n"
-			(car const-record) (caddr const-record))))
+			(car const-record) (find-in-const-list 'T_STRING (symbol->string (caddr const-record)) const-list)))))
 
 (define extract-const-table
 	(lambda (const-table)
@@ -405,7 +415,7 @@
 				(list 'not 'car 'cdr 'char? 'integer? 'null? 'number? 'pair? 'procedure? 'string? 'symbol? 'vector? 
 				'set-car! 'set-cdr! '= '> '< '+ 'numerator 'denominator 'boolean? '* '/ '- 'remainder 'char->integer 
 				'integer->char 'cons 'list 'make-vector 'vector 'vector-length 'vector-ref 'vector-set! 
-				'make-string 'string-length 'string-ref 'string-set! 'symbol->string 'eq? 'string->symbol)
+				'make-string 'string-length 'string-ref 'string-set! 'symbol->string 'eq? 'string->symbol 'apply)
 				(map cadadr
 					(filter 
 						(lambda (x) (and (list? x) (not (null? x)) (eq? 'define (car x))))

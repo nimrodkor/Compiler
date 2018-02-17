@@ -26,14 +26,9 @@ main:
 					((pair? x) (find-type-in-list 'T_PAIR (list (car x) (cdr x)) in-list))
 					((vector? x) (find-type-in-list 'T_VECTOR (vector->list x) in-list))
 					((string? x) (find-type-in-list 'T_STRING (convert-string-to-ascii-list x) in-list))
-					((symbol? x) (find-symbol x in-list))
+					((symbol? x) (find-type-in-list 'T_SYMBOL (list x) in-list))
 					(#t (begin (display (format "code-gen: need to support ~A\n" x)) #f))))
 			in-list)))
-
-(define find-symbol
-	(lambda (sym in-list)
-		(let ((sym-string-ascii (convert-string-to-ascii-list (symbol->string sym))))
-			(+ 1 (find-type-in-list 'T_STRING sym-string-ascii in-list)))))
 
 (define find-in-fvar-list
 	(lambda (fvar)
@@ -52,7 +47,7 @@ main:
 		(if (or (null? list) (not (list? list)))
 			(begin (display (format "const ~A not found in const-list\n" const)) 0)
 			(let ((current-node (car list)))
-;				(display (format "const: ~A, current-node: ~A\n" const current-node))
+;				(display (format "const: ~A, current-node: ~A\n" const (cddr current-node)))
 				(if (and (eq? type (cadr current-node)) (equal? const (cddr current-node)))
 					(car current-node)
 					(find-type-in-list type const (cdr list)))))))

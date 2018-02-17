@@ -1,57 +1,13 @@
 (define set-up-global-env
 "	
-	mov rdi, 8
-	call malloc
+	MY_MALLOC 8
 	mov r12, rax
-;	mov rdi, 16
-	;call malloc
-	;mov rdi, 8
-	;call malloc
-	;mov rbx, rax
-	;mov rax, 4*3
-	;add rax, rbp
-	;add rcx, rax
-	;mov rcx, qword[rax]
-	;mov [rbx], rcx
-	;mov rax, 8
-	;add rbp, rax
-	;mov rax, rbp
-	;add rax, 8
 ")
-
-(define set-up-global-env-with-n-vars
-	(lambda (n tag)
-	(format "
-	mov rdi, 8*~A
-	call malloc
-	mov rcx, rax
-	mov rdi, 8*1 				
-	call malloc
-	mov rbx, rax
-	mov rax, 0
-p_~A:
-	cmp	rax, ~A				
-	je  e_~A
-	mov r10, rax
-	add rax, 4
-	sal rax, 3
-	mov r8, rax
-	add r8, rbp
-	mov r9, rcx
-	add r9, rax
-	mov r9, qword[r8]
-	mov rax, r10
-	inc rax
-	jmp p_~A
-e_~A:
-	mov [rbx], rcx
-" n tag n tag tag tag)))
 
 (define not-assembly
 (string-append "\n;;  not? ;;\n" set-up-global-env "
 CL_not:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_not
 
 	jmp L_not
@@ -79,8 +35,7 @@ L_not:
 	(string-append "\n;;  car ;;\n" set-up-global-env
 "
 CL_car:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_car
 
 	jmp L_car
@@ -102,8 +57,7 @@ L_car:
 	(string-append "\n;;  cdr ;;\n" set-up-global-env
 "
 CL_cdr:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_cdr
 
 	jmp L_cdr
@@ -125,8 +79,7 @@ L_cdr:
 	(string-append "\n;;  char? ;;\n" set-up-global-env
 "
 CL_char:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_char
 
 	jmp L_char
@@ -154,8 +107,7 @@ L_char:
 	(string-append "\n;;  integer? ;;\n" set-up-global-env
 "
 CL_integer:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_integer
 
 	jmp L_integer
@@ -183,8 +135,7 @@ L_integer:
 	(string-append "\n;;  boolean? ;;\n" set-up-global-env
 "
 CL_bool:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_bool
 
 	jmp L_bool
@@ -212,8 +163,7 @@ L_bool:
 	(string-append "\n;;  null? ;;\n" set-up-global-env
 "
 CL_null:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_null
 
 	jmp L_null
@@ -241,8 +191,7 @@ L_null:
 	(string-append "\n;;  number? ;;\n" set-up-global-env
 "
 CL_number:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_number
 
 	jmp L_number
@@ -272,8 +221,7 @@ L_number:
 	(string-append "\n;;  pair? ;;\n" set-up-global-env
 "
 CL_pair:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_pair
 
 	jmp L_pair
@@ -301,8 +249,7 @@ L_pair:
 	(string-append "\n;;  procedure? ;;\n" set-up-global-env
 "
 CL_procedure:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_procedure
 
 	jmp L_procedure
@@ -330,8 +277,7 @@ L_procedure:
 	(string-append "\n;;  string? ;;\n" set-up-global-env
 "
 CL_string:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_string
 
 	jmp L_string
@@ -359,8 +305,7 @@ L_string:
 (string-append "\n;;  symbol? ;;\n" set-up-global-env
 "
 CL_symbol:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_symbol
 
 	jmp L_symbol
@@ -388,8 +333,7 @@ L_symbol:
 	(string-append "\n;;  vector? ;;\n" set-up-global-env
 "
 CL_vector:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_vector
 
 	jmp L_vector
@@ -417,8 +361,7 @@ L_vector:
 	(string-append "\n;;   set-car!   ;;\n" set-up-global-env
 "
 CL_set_car:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_set_car
 
 	jmp L_set_car
@@ -449,8 +392,7 @@ L_set_car:
 	(string-append "\n;;   set-cdr!   ;;\n" set-up-global-env
 "
 CL_set_cdr:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_set_cdr
 
 	jmp L_set_cdr
@@ -481,8 +423,7 @@ L_set_cdr:
 	(string-append "\n;;   =   ;;\n" set-up-global-env 
 "
 CL_equals:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_equals
 
 	jmp L_equals
@@ -524,8 +465,7 @@ L_equals:
 	(string-append set-up-global-env 
 "
 CL_gt:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_gt
 
 	jmp L_gt
@@ -568,8 +508,7 @@ L_gt:
 	(string-append  "\n;;   <   ;;\n" set-up-global-env 
 "
 CL_lt:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_lt
 
 	jmp L_lt
@@ -612,8 +551,7 @@ L_lt:
 	(string-append  "\n;;   +   ;;\n" set-up-global-env
 "
 CL_plus:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_plus
 	jmp L_plus
 B_plus:
@@ -663,13 +601,11 @@ plus_loop:
 	mov rax, r12
 	div r11
 	mov r12, rax 		; r12 = denominator after reduction
-	mov rdi, 8
-	call malloc
+	MY_MALLOC 8
 	mov r8, r13
 	mov r13, rax
 	mov qword [r13], r8
-	mov rdi, 8
-	call malloc
+	MY_MALLOC 8
 	mov r9, r12
 	mov r12, rax
 	mov qword [r12], r9
@@ -697,8 +633,7 @@ L_plus:
 	(string-append  "\n;;   numerator   ;;\n" set-up-global-env
 "
 CL_numerator:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_numerator
 
 	jmp L_numerator
@@ -721,8 +656,7 @@ L_numerator:
 	(string-append  "\n;;   denominator   ;;\n" set-up-global-env
 "
 CL_denominator:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_denominator
 
 	jmp L_denominator
@@ -745,8 +679,7 @@ L_denominator:
 	(string-append  "\n;;   mul   ;;\n" set-up-global-env
 "
 CL_mul:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_mul
 	jmp L_mul
 B_mul:
@@ -790,13 +723,11 @@ mul_loop:
 	mov rax, r11
 	div r12
 	mov r12, rax 		; r12 = denominator after reduction
-	mov rdi, 8
-	call malloc
+	MY_MALLOC 8
 	mov r8, r13
 	mov r13, rax
 	mov qword [r13], r8
-	mov rdi, 8
-	call malloc
+	MY_MALLOC 8
 	mov r9, r12
 	mov r12, rax
 	mov qword [r12], r9
@@ -824,8 +755,7 @@ L_mul:
 	(string-append  "\n;;   /   ;;\n" set-up-global-env
 "
 CL_div:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_div
 	jmp L_div
 B_div:
@@ -876,13 +806,11 @@ div_loop:
 	mov rax, r11
 	div r12
 	mov r12, rax 		; r12 = denominator after reduction
-	mov rdi, 8
-	call malloc
+	MY_MALLOC 8
 	mov r8, r13
 	mov r13, rax
 	mov qword [r13], r8
-	mov rdi, 8
-	call malloc
+	MY_MALLOC 8
 	mov r9, r12
 	mov r12, rax
 	mov qword [r12], r9
@@ -906,8 +834,7 @@ L_div:
 	(string-append  "\n;;   -   ;;\n" set-up-global-env
 "
 CL_sub:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_sub
 	jmp L_sub
 B_sub:
@@ -963,13 +890,11 @@ sub_loop:
 	mov rax, r12
 	div r11
 	mov r12, rax 		; r12 = denominator after reduction
-	mov rdi, 8
-	call malloc
+	MY_MALLOC 8
 	mov r8, r13
 	mov r13, rax
 	mov qword [r13], r8
-	mov rdi, 8
-	call malloc
+	MY_MALLOC 8
 	mov r9, r12
 	mov r12, rax
 	mov qword [r12], r9
@@ -993,8 +918,7 @@ L_sub:
 	(string-append  "\n;;   remainder   ;;\n" set-up-global-env
 "
 CL_remainder:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_remainder
 
 	jmp L_remainder
@@ -1031,8 +955,7 @@ L_remainder:
 	(string-append "\n;;    char->integer   ;;\n" set-up-global-env
 "
 CL_char_integer:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_char_integer
 
 	jmp L_char_integer
@@ -1056,8 +979,7 @@ L_char_integer:
 	(string-append "\n;;    cons   ;;\n" set-up-global-env
 "
 CL_cons:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_cons
 
 	jmp L_cons
@@ -1066,16 +988,13 @@ B_cons:
 	mov rbp, rsp
 	mov r12, qword [rbp + 4*8]
 	mov r13, qword [rbp + 5*8]
-	mov rdi, 8
-	call malloc
+	MY_MALLOC 8
 	mov qword[rax], r12
 	mov r12, rax
-	mov rdi, 8
-	call malloc
+	MY_MALLOC 8
 	mov qword[rax], r13
 	mov r13, rax
-	mov rdi, 8
-	call malloc
+	MY_MALLOC 8
 	MAKE_MALLOC_LITERAL_PAIR rax, r12, r13	
 	mov rax, qword [rax]
 	leave
@@ -1090,8 +1009,7 @@ L_cons:
 	(string-append "\n;;;     list     ;;;\n" set-up-global-env
 "
 CL_list:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_list
 
 	jmp L_list
@@ -1111,19 +1029,16 @@ B_list_loop:
 	sal r14, 3 				
 	add r14, rbp 			
 	mov r13, qword [r14]	; r14 = rbp + (i+4)*8
-	mov rdi, 8
-	call malloc
+	MY_MALLOC 8
 	mov qword[rax], r13
 	mov r13, rax
 
 	sub r14, 8				
 	mov r12, qword [r14]	; r14 = rbp + (i+3)*8
-	mov rdi, 8
-	call malloc
+	MY_MALLOC 8
 	mov qword[rax], r12
 	mov r12, rax
-	mov rdi, 8
-	call malloc
+	MY_MALLOC 8
 	MAKE_MALLOC_LITERAL_PAIR rax, r12, r13	
 	mov rax, qword [rax]
 	mov qword [r14], rax
@@ -1148,8 +1063,7 @@ L_list:
 	(string-append "\n;;;     make-vector     ;;;\n" set-up-global-env
 "
 CL_make_vector:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_make_vector
 
 	jmp L_make_vector
@@ -1161,13 +1075,12 @@ B_make_vector:
 	mov r15, 0
 	sal r15, TYPE_BITS
 	or  r15, T_INTEGER
-	mov rdi, 8
-	call malloc
+	MY_MALLOC 8
 	mov qword[rax], r15
 	mov r15, rax
 	mov rdi, r12
 	shl rdi, 3
-	call malloc
+	MY_MALLOC rdi
 	mov rbx, rax
 	mov rdx, 0
 
@@ -1198,8 +1111,7 @@ L_make_vector:
 	(string-append "\n;;;     vector     ;;;\n" set-up-global-env
 "
 CL_vector_create:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_vector_create
 	jmp L_vector_create
 B_vector_create:
@@ -1209,7 +1121,7 @@ B_vector_create:
 	sub r12, 1
 	mov rdi, r12
 	shl rdi, 3
-	call malloc
+	MY_MALLOC rdi
 	mov r14, rax
 	mov rbx, rax
 	mov rdx, 0
@@ -1218,8 +1130,7 @@ B_vector_elements_loop:
 	je  vector_register
 	push rbx
 	push rdx
-	mov rdi, 8
-	call malloc
+	MY_MALLOC 8
 	pop rdx
 	mov r15, qword [rbp + (4 + rdx)*8]
 	mov qword[rax], r15
@@ -1249,8 +1160,7 @@ L_vector_create:
 	(string-append "\n;;;     vector-length     ;;;\n" set-up-global-env
 "
 CL_vector_length:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_vector_length
 	jmp L_vector_length
 B_vector_length:
@@ -1272,8 +1182,7 @@ L_vector_length:
 	(string-append "\n;;;     vector-ref     ;;;\n" set-up-global-env
 "
 CL_vector_ref:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_vector_ref
 
 	jmp L_vector_ref
@@ -1302,8 +1211,7 @@ L_vector_ref:
 	(string-append "\n;;;     vector-set     ;;;\n" set-up-global-env
 "
 CL_vector_set:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_vector_set
 
 	jmp L_vector_set
@@ -1333,8 +1241,7 @@ L_vector_set:
 	(string-append "\n;;;     make-string     ;;;\n" set-up-global-env
 "
 CL_make_string:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_make_string
 
 	jmp L_make_string
@@ -1345,7 +1252,7 @@ B_make_string:
 	DATA r13
 	mov rdi, r13
 	sal rdi, 3
-	call malloc
+	MY_MALLOC rdi
 	mov rbx, 0
 B_make_string_loop:
 	cmp rbx, r13
@@ -1372,8 +1279,7 @@ L_make_string:
 	(string-append "\n;;;     string-length     ;;;\n" set-up-global-env
 "
 CL_string_length:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_string_length
 
 	jmp L_string_length
@@ -1396,8 +1302,7 @@ L_string_length:
 	(string-append "\n;;;     string-ref     ;;;\n" set-up-global-env
 "
 CL_string_ref:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_string_ref
 
 	jmp L_string_ref
@@ -1424,8 +1329,7 @@ L_string_ref:
 	(string-append "\n;;;     string-set     ;;;\n" set-up-global-env
 "
 CL_string_set:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_string_set
 
 	jmp L_string_set
@@ -1453,16 +1357,18 @@ L_string_set:
 	(string-append "\n;;;     symbol->string     ;;;\n" set-up-global-env
 "
 CL_symbol_string:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_symbol_string
 
 	jmp L_symbol_string
 B_symbol_string:
 	push rbp
 	mov rbp, rsp
-	mov rax, qword [rbp + 4*8]
-	SYMBOL_STRING rax
+	mov r15, qword [rbp + 4*8]
+	push SOB_TRUE
+	call write_sob_if_not_void
+	add rsp, 8
+	SYMBOL_STRING r15
 	leave
 	ret
 L_symbol_string:
@@ -1475,8 +1381,7 @@ L_symbol_string:
 	(string-append "\n;;;     eq?     ;;;\n" set-up-global-env
 "
 CL_eq:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_eq
 
 	jmp L_eq
@@ -1504,8 +1409,7 @@ L_eq:
 	(string-append "\n;;;    string-> symbol ;;; \n" set-up-global-env
 	"
 CL_string_symbol:
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, rbx, B_string_symbol
 
 	jmp L_string_symbol
@@ -1540,22 +1444,19 @@ B_string_symbol_found:
 	jmp B_string_symbol_end
 B_string_symbol_not_found:
 	; r14 - pointer to last node, r15 - new symbol string 
-	mov rdi, 8
-	call malloc 			; create new symbol
+	MY_MALLOC 8 			; create new symbol
 	mov qword [rax], r15
 	sub rax, start_of_data
 	sal rax, TYPE_BITS
 	or  rax, T_SYMBOL
 	mov r13, rax			; r13 = symbol
 	push rax
-	mov rdi, 8
-	call malloc
+	MY_MALLOC 8
 	mov qword [rax], r13
 	mov r13, rax
 	sub r13, start_of_data	; r13 = relative address of symbol
 	sal r13, 34
-	mov rdi, 8
-	call malloc 			; create new node
+	MY_MALLOC 8 			; create new node
 	mov qword [rax], r13
 	mov r12, rax			; r12 - pointer to new node
 	sub r12, start_of_data  
@@ -1572,7 +1473,50 @@ L_string_symbol:
 	mov rax, qword [rax]
 	mov qword [fvar_40], rax
 	mov rax, SOB_VOID
+"))
 
+(define apply-assembly
+	(string-append "\n;;; append ;;; \n" set-up-global-env
+	"
+CL_apply:
+	MY_MALLOC 16
+	MAKE_LITERAL_CLOSURE rax, rbx, B_apply
+
+	jmp L_apply
+B_apply:
+	push rbp
+	mov rbp, rsp
+	mov rax, qword [rbp + 4*8]
+	mov rbx, qword [rbp + 5*8]
+	mov r8, 0
+B_apply_loop:
+	mov rcx, rbx
+	cmp rcx, SOB_NIL
+	je  B_apply_call
+	CAR rcx
+	push rcx
+	CDR rbx
+	inc r8
+	jmp B_apply_loop
+B_apply_call:
+	push rcx
+	inc r8
+	push r8
+	
+	mov rbx, rax			; apply the closure
+	CLOSURE_ENV rbx
+	CLOSURE_CODE rax
+	push rbx
+    call rax
+    sal r8, 3
+    add r8, 8
+    add rsp, r8
+	leave
+	ret
+L_apply:
+	mov rax, qword [rax]
+	mov qword [fvar_41], rax
+	mov rax, SOB_VOID
 "))
 
 (define get-runtime-assembly-functions
@@ -1619,6 +1563,7 @@ L_string_symbol:
 			symbol->string-assembly
 			eq?-assembly
 			string->symbol-assembly
+			apply-assembly
 			"\n;; End of assembly library functions \n\n")))
 
 

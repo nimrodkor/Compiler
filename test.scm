@@ -1,8 +1,8 @@
 (define y (lambda (x) x))
 (define x 123)
-y
-(y 3)
-(if #f x y)
+;y
+;(y 3)
+;(if #f x y)
 2
 5
 10
@@ -88,7 +88,7 @@ pair-example
 (< 3 1)
 (< 1 2 3 4 5 6)
 (< 1 2 3 4 6 5)
-;(((lambda (x) (lambda (y) x)) 1) 2)
+(((lambda (x) (lambda (y) x)) 1) 2)
 ((lambda x x) 2 3)
 (numerator 2)
 (numerator 2/3)
