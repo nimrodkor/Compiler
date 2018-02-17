@@ -3,6 +3,8 @@
 global main, write_sob, write_sob_if_not_void
 section .text
 main:
+	mov rax, malloc_pointer
+	mov qword [rax], start_of_malloc
 ")
 
 (define fvars 0)
@@ -68,6 +70,9 @@ main:
 			((equal? (car code) 'bvar) (code-gen-bvar code))
 			((and (equal? 'set (car code))) (equal? 'bvar (caadr code))
 				(code-gen-set-bvar code constants-table env-depth))
+			((equal? (car code) 'box) (code-gen-box code constants-table env-depth))
+			((equal? (car code) 'box-get) (code-gen-box-get code constants-table env-depth))
+			((equal? (car code) 'box-set) (code-gen-box-set code constants-table env-depth))
 			((equal? 'or (car code)) (code-gen-or code constants-table env-depth))
 			((equal? 'if3 (car code)) (code-gen-if code constants-table env-depth))
 			((equal? (car code) 'seq) (code-gen-seq code constants-table env-depth))
@@ -113,8 +118,7 @@ main:
 			(string-append 
 				(format "
 	push rax
-	mov rdi, 8
-	call malloc
+	MY_MALLOC 8
 	mov r12, rax
 	sub r12, start_of_data
 	pop rbx
@@ -230,6 +234,40 @@ main:
 	mov rax, SOB_VOID
 " major minor)))))
 
+(define code-gen-box
+	(lambda (box-exp constants-table env-depth)
+		(string-append
+			(code-gen-helper (cadr box-exp) constants-table env-depth)
+			"
+; box
+    mov r12, rax
+    MY_MALLOC 8
+    mov qword[rax], r12
+")))
+
+(define code-gen-box-get
+	(lambda (box-get-exp constants-table env-depth)
+		(string-append
+			(code-gen-helper (cadr box-get-exp) constants-table env-depth)
+			"
+	; box-get
+    mov rax, qword[rax]
+")))
+
+(define code-gen-box-set
+	(lambda (box-set-exp constants-table env-depth)
+		(string-append
+			(code-gen-helper (caddr box-set-exp) constants-table env-depth)
+			"    push rax\n"
+			(code-gen-helper (cadr box-set-exp) constants-table env-depth)
+			"
+	; box-set
+    pop rbx
+    mov qword[rax], rbx
+    mov rax, SOB_VOID
+")))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;Lambda Code Gen;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -280,11 +318,9 @@ main:
 (define env-mallocs
 	(lambda (n env-depth)
 		(format "    
-	mov rdi, 8*~A 				; 8*n
-	call malloc
+	MY_MALLOC 8*~A 				; 8*n
 	mov rcx, rax
-	mov rdi, 8*~A 				; 8*(m + 1)
-	call malloc
+	MY_MALLOC 8*~A 				; 8*n
 	mov rbx, rax
 "
 		n (+ 1 env-depth))))
@@ -302,11 +338,9 @@ main:
 (define first-lambda
 	(lambda (index)
 		(format "
-	mov rdi, 8
-	call malloc
+	MY_MALLOC 8
 	mov r12, rax
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	MAKE_LITERAL_CLOSURE rax, r12, B_~A
 	jmp L_~A
 " index index)))
@@ -314,8 +348,7 @@ main:
 (define extend-envs
 	(lambda (depth index)
 		(format "
-	mov rdi, 8*~A
-	call malloc
+	MY_MALLOC 8*~A
 	mov rbx, rax
 	mov rcx, [rbp + 2*8]
 	mov r9, ~A
@@ -335,8 +368,7 @@ e_loop_end_~A:
 	(lambda (index len)
 		(format 
 "	push rbx
-	mov rdi, 8*~A
-	call malloc
+	MY_MALLOC 8*~A
 	mov rcx, rax
 	pop rbx
 	mov r8, 0
@@ -388,19 +420,16 @@ N_F_loop_~A:
 	sal r14, 3 				
 	add r14, rbp 			
 	mov r13, qword [r14]	; r14 = rbp + (i+4)*8
-	mov rdi, 8
-	call malloc
+	MY_MALLOC 8
 	mov qword[rax], r13
 	mov r13, rax
 
 	sub r14, 8				
 	mov r12, qword [r14]	; r14 = rbp + (i+3)*8
-	mov rdi, 8
-	call malloc
+	MY_MALLOC 8
 	mov qword[rax], r12
 	mov r12, rax
-	mov rdi, 8
-	call malloc
+	MY_MALLOC 8
 	MAKE_MALLOC_LITERAL_PAIR rax, r12, r13	
 	mov rax, qword [rax]
 	mov qword [r14], rax
@@ -417,8 +446,7 @@ N_F_~A:
 CL_~A:
 	mov qword [rbx], rcx
 	push rbx
-	mov rdi, 16
-	call malloc
+	MY_MALLOC 16
 	pop rbx
 	MAKE_LITERAL_CLOSURE rax, rbx, B_~A
 

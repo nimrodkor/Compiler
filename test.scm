@@ -176,3 +176,4 @@ nim
 (string->symbol "abc")
 (string->symbol "hello")
 (string->symbol "hello")
+((((lambda (x) (lambda (y) (set! x 2) (lambda (z) x))) 100) 200) 300)

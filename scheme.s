@@ -248,7 +248,18 @@ mov rax, qword [rax]
 %define SOB_TRUE MAKE_LITERAL(T_BOOL, 1)
 %define SOB_NIL MAKE_LITERAL(T_NIL, 0)
 
+%macro MY_MALLOC 1
+mov rbx, malloc_pointer
+mov rax, qword [rbx]
+add qword [rbx], %1
+%endmacro
+
 section .bss
+malloc_pointer:
+resq 1
+start_of_malloc:
+resb 2^30
+
 	extern exit, printf, scanf
 	global main, write_sob, write_sob_if_not_void
 

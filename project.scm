@@ -49,10 +49,13 @@
 	(lambda (const-record)
 		(let ((raw-value (cddr const-record))
 			(type (cadr const-record)))
+;			(display (format "const-record: ~A, raw-value: ~A\n" const-record raw-value))
 			(cond 
 				((eq? type 'T_PAIR) (cons (car raw-value) (cadr raw-value)))
 				((eq? type 'T_VECTOR) (list->vector raw-value))
 				((eq? type 'T_STRING) (convert-ascii-list-to-string raw-value))
+				((eq? type 'T_SYMBOL) (cadddr const-record))
+				((eq? type 'T_BOOL) (if (= (car raw-value) 1) #t #f))
 				(#t  (car raw-value)))
 			)))
 
@@ -81,6 +84,7 @@
 			((symbol? const) 'T_SYMBOL)
 			((pair? const) 'T_PAIR)
 			((vector? const) 'T_VECTOR)
+			((boolean? const) (if const 1 0))
 			(#t 'undef))))
 
 (define is-last?
@@ -219,7 +223,7 @@
     					(append (list address) (list 'T_STRING) (convert-string-to-ascii-list const)))
     				((symbol? const)
     					(add-to-symbol-strings-list address)
-    					(list address 'T_SYMBOL (- address 1)))
+    					(list address 'T_SYMBOL (- address 1) const))
     				((pair? const)
     					(list address 'T_PAIR (car const) (cdr const)))
     				((vector? const)
@@ -280,10 +284,13 @@
 		(map
 			(lambda (val)
 				(cond 
+					((null? val) 1)
 					((integer? val) (find-in-const-list 'T_INTEGER val const-list))
 					((pair? val) (find-in-const-list 'T_PAIR val const-list))
 					((vector? val) (find-in-const-list 'T_VECTOR val const-list))
 					((string? val) (find-in-const-list 'T_STRING val const-list))
+					((symbol? val) (find-in-const-list 'T_SYMBOL val const-list))
+					((boolean? val) (find-in-const-list 'T_BOOL val const-list))
 					(#t (begin (display (format "the val ~A is not yet supported for assembly declaration" val)) #f))))
 			vals-list)))
 
@@ -363,10 +370,10 @@
 				(pipeline (read-from-file in-file)))
 			(constants-table (make-const-table parsed-scheme-code))
 			(global-variable-table (make-global-variable-table '() (extract-fvars-from-code parsed-scheme-code))))
-			(display (format "Constants table: ~A\n" constants-table))
+;			(display (format "Constants table: ~A\n" constants-table))
 ;			(display (format "Parsed code: ~A\n" parsed-scheme-code))
 ;			(display (format "G-V-T: ~A\n" global-variable-table))
-			(display (format "Symbol-list: ~A\n" symbol-list))
+;			(display (format "Symbol-list: ~A\n" symbol-list))
 			(write-to-file out-file
 				(string-append 
 					prolog 
