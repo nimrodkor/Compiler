@@ -367,7 +367,7 @@ B_vector_end:
     ret
 L_vector:
     mov rax, qword [rax]
-    mov qword [fvar_10], rax
+    mov qword [fvar_11], rax
     mov rax, SOB_VOID
 "))
 
@@ -1288,9 +1288,7 @@ B_vector_ref:
     VECTOR_ELEMENTS rax
     add rax, r13
     mov rax, qword [rax]
-    push qword [rax]
-    call write_sob_if_not_void
-    add rsp, 8
+    mov rax, qword [rax]
     leave
     ret
 L_vector_ref:
@@ -1469,9 +1467,6 @@ B_symbol_string:
     push rbp
     mov rbp, rsp
     mov r15, qword [rbp + 4*8]
-    push SOB_TRUE
-    call write_sob_if_not_void
-    add rsp, 8
     SYMBOL_STRING r15
     leave
     ret
@@ -1730,7 +1725,7 @@ L_apply:
     '((define integer->char char->integer)
     (define rational? number?)
     (define zero? (lambda (x) (and (number? x) (= 0 x))))
-    (define map (lambda (f l) (if (null? l) '() (cons (f (car l)) (map f (cdr l))))))
+    (define map (lambda (f  l) (if (null? l) '() (cons (f (car l)) (map f (cdr l))))))
     (define regular-append
         (lambda (l m)
             (if (null? l)

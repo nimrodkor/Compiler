@@ -288,11 +288,13 @@
 				(cond 
 					((null? val) 1)
 					((integer? val) (find-in-const-list 'T_INTEGER val const-list))
+					((number? val) (find-in-const-list 'T_FRACTION val const-list))
 					((pair? val) (find-in-const-list 'T_PAIR val const-list))
 					((vector? val) (find-in-const-list 'T_VECTOR val const-list))
 					((string? val) (find-in-const-list 'T_STRING val const-list))
 					((symbol? val) (find-in-const-list 'T_SYMBOL val const-list))
 					((boolean? val) (find-in-const-list 'T_BOOL val const-list))
+					((char? val) (find-in-const-list 'T_CHAR val const-list))
 					(#t (begin (display (format "the val ~A is not yet supported for assembly declaration" val)) #f))))
 			vals-list)))
 
@@ -310,9 +312,11 @@
 	(lambda (const-record const-list)
 		(let ((vals-places (find-vector-vals-places (cddr const-record) const-list)))
 			(string-append
-				(format "const_~A:\n    MAKE_LITERAL_VECTOR" (car const-record))
-				(create-vector-creation-args vals-places)
-				"\n"))))
+				(format "const_~A:\n" (car const-record))
+				(if (< (length (cddr const-record)) 1)
+				"    dq T_VECTOR\n"
+				(format "    MAKE_LITERAL_VECTOR ~A\n"
+					(create-vector-creation-args vals-places)))))))
 
 (define create-string-creation-args
 	(lambda (ascii-list)

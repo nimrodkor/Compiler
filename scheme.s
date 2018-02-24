@@ -560,8 +560,6 @@ write_sob_symbol:
 	push rbp
 	mov rbp, rsp
 	mov rax, 0
-	mov rdi, .quote
-	call printf
 	mov rax, qword [rbp + 8 + 1*8]
 	SYMBOL_STRING rax
 	mov rcx, rax
