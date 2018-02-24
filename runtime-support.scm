@@ -1153,9 +1153,16 @@ B_make_vector:
     mov rbp, rsp
     mov r12, qword [rbp + 4*8]
     DATA r12
+    mov r13, qword [rbp + 3*8]
+    cmp r13, 3
+jne B_make_vector_element
+    mov r15, qword [rbp + 5*8]
+    jmp B_make_vector_cont
+B_make_vector_element:
     mov r15, 0
     sal r15, TYPE_BITS
     or  r15, T_INTEGER
+B_make_vector_cont:
     mov rdi, 8
     call malloc 
     mov qword[rax], r15
@@ -1165,7 +1172,6 @@ B_make_vector:
     call malloc
     mov rbx, rax
     mov rdx, 0
-
 B_make_vector_elements_loop:
     cmp rdx, r12
     je  make_vector_register
@@ -1342,10 +1348,16 @@ B_make_string:
     sal rdi, 3
     call malloc
     mov rbx, 0
+    mov cl, 0
+    mov r12, qword [rbp + 3*8]
+    cmp r12, 3
+    jne B_make_string_loop
+    mov rcx, qword [rbp + 5*8]
+    DATA rcx
 B_make_string_loop:
     cmp rbx, r13
     je make_string_register
-    mov qword[rax + rbx], 0
+    mov byte[rax + rbx], cl
     inc rbx
     jmp B_make_string_loop
 make_string_register:

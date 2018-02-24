@@ -156,6 +156,14 @@ mov rax, qword [rax]
 	mov rax, rbx
 %endmacro
 
+%macro ABS 1
+	mov rax, %1
+	cmp rax, 0
+	jge %%abs_end
+	neg rax
+%%abs_end:
+%endmacro
+
 ;;; REDUCE_FRAC_TO_INT target-address, numerator-address, denominator-address
 %macro REDUCE_FRAC_TO_INT 3
 	mov rax, qword [%2]
@@ -394,7 +402,7 @@ section .data
 .nul:
 	db "#\nul", 0
 .special:
-	db "#\x%02x", 0
+	db "#\x%01x", 0
 .regular:
 	db "#\%c", 0
 
@@ -538,7 +546,7 @@ section .data
 .fs_simple_char:
 	db "%c", 0
 .fs_hex_char:
-	db "\x%02x;", 0	
+	db "\x%01x;", 0	
 .fs_tab:
 	db "\t", 0
 .fs_page:
