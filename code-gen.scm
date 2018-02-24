@@ -312,18 +312,6 @@ main:
 						body))
 				(format "    leave\n    ret\n\nL_~A:\n    mov rax, qword [rax]\n" lambda-index)))))
 
-(define env-mallocs
-	(lambda (n env-depth)
-		(format "    
-	mov rdi, 8*~A 				; 8*n
-	call malloc
-	mov rcx, rax
-	mov rdi, 8*~A 				; 8*n
-	call malloc
-	mov rbx, rax
-"
-		n (+ 1 env-depth))))
-
 (define make-env
 	(lambda (params-list lambda-index env-depth)
 		(let ((len (length params-list)))
@@ -364,7 +352,7 @@ e_loop_~A:
 	mov qword [rbx + 8*r8], r12
 	jmp e_loop_~A
 e_loop_end_~A:
-" (+ 1 depth) (+ 1 depth) index index index index)))
+" (+ 1 depth) depth index index index index)))
 
 (define copy-params-from-stack
 	(lambda (index len)

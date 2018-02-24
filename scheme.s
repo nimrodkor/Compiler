@@ -149,6 +149,11 @@ mov rax, qword [rax]
 %macro REDUCE_FRAC_TO_INT 3
 	mov rax, qword [%2]
 	mov rbx, qword [%3]
+	cmp rbx, 0
+	jge %%cont_reduce
+	neg rax
+	neg rbx
+%%cont_reduce:
 	mov rdx, 0
 	div rbx
 	cmp rdx, 0		; see if they divide exactly

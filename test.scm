@@ -1,8 +1,8 @@
 (define y (lambda (x) x))
 (define x 123)
-;y
-;(y 3)
-;(if #f x y)
+y
+(y 3)
+(if #f x y)
 2
 5
 10
@@ -177,3 +177,5 @@ nim
 (string->symbol "hello")
 (string->symbol "hello")
 ((((lambda (x) (lambda (y) (set! x 2) (lambda (z) x))) 100) 200) 300)
+""
+(make-string 0)

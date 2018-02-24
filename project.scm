@@ -323,17 +323,20 @@
 
 (define convert-string-to-assembly
 	(lambda (const-record const-list)
-		(format "const_~A:\n    MAKE_LITERAL_STRING~A\n" 
+		(format "const_~A:\n~A" 
 			(car const-record) 
-			(create-string-creation-args (cddr const-record)))))
+			(if (< (length (cddr const-record)) 1)
+				"    dq T_STRING\n"
+				(format "    MAKE_LITERAL_STRING ~A\n" 
+					(create-string-creation-args (cddr const-record)))))))
 
 (define last-symbol-address 0)
 
 (define convert-symbol-to-assembly 
 	(lambda (const-record const-list) 
-		(begin (display (format "const_record: ~A\n" const-record))
+;		(begin (display (format "const_record: ~A\n" const-record))
 		(format "const_~A:\n    dq MAKE_LITERAL_SYMBOL(const_~A)\n"
-			(car const-record) (find-in-const-list 'T_STRING (symbol->string (caddr const-record)) const-list)))))
+			(car const-record) (find-in-const-list 'T_STRING (symbol->string (caddr const-record)) const-list))))
 
 (define extract-const-table
 	(lambda (const-table)
