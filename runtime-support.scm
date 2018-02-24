@@ -826,6 +826,7 @@ div_loop:
     NUMERATOR r8
     mul r11
     mov r11, rax        ; r11 = b*c = solution denominator
+    cmp r11, 0
     GCD r10, r11
     mov r12, rax        ; r12 = gcd(numerator, denominator)
     mov rax, r10

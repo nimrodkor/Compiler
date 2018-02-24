@@ -116,6 +116,8 @@ mov rax, qword [rax]
 %%B_denominator_INT:
 	mov rax, 1
 %%B_denominator_end:
+	sal rax, TYPE_BITS
+	sar rax, TYPE_BITS
 %endmacro
 
 %macro NUMERATOR 1
@@ -127,12 +129,21 @@ mov rax, qword [rax]
 	CAR rax
 %%B_numerator_end:
 	DATA rax
+	sal rax, TYPE_BITS
+	sar rax, TYPE_BITS
 %endmacro
 
 ;;; GCD m, n
 %macro GCD 2
 	mov rax, %1
+	cmp rax, 0
+	jge %%compute_rbx
+	neg rax
+%%compute_rbx:
 	mov rbx, %2
+	cmp rbx, 0
+	jge %%loop
+	neg rbx
 %%loop:
 	mov rdx, 0
 	div rbx
@@ -148,27 +159,31 @@ mov rax, qword [rax]
 ;;; REDUCE_FRAC_TO_INT target-address, numerator-address, denominator-address
 %macro REDUCE_FRAC_TO_INT 3
 	mov rax, qword [%2]
+	sal rax, TYPE_BITS
+	sar rax, TYPE_BITS
 	mov rbx, qword [%3]
+	sal rbx, TYPE_BITS
+	sar rbx, TYPE_BITS
+	mov rcx, rax
 	cmp rbx, 0
 	jge %%cont_reduce
-	neg rax
+    neg rax
 	neg rbx
+	mov rcx, rax
 %%cont_reduce:
 	mov rdx, 0
 	div rbx
 	cmp rdx, 0		; see if they divide exactly
 	jne %%make_frac
-	mov rax, qword [%2]
 	sal rax, TYPE_BITS
 	or  rax, T_INTEGER
 	jmp %%REDUCE_END
-%%make_frac:						; not an int, create fraction
-	mov rax, qword [%2]			; setup numerator
-	sal rax, TYPE_BITS
-	or  rax, T_INTEGER
+%%make_frac:						; not an int, create write_sob_fraction
+	mov rax, rcx
+    sal rax, TYPE_BITS
+    or  rax, T_INTEGER
 	mov qword [%2], rax
 
-	mov rbx, qword [%3]			;setup denomintator
 	sal rbx, TYPE_BITS
 	or  rbx, T_INTEGER
 	mov qword [%3], rbx
