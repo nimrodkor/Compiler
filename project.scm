@@ -422,7 +422,7 @@
 				(list 'not 'car 'cdr 'char? 'integer? 'null? 'number? 'pair? 'procedure? 'string? 'symbol? 'vector? 
 				'set-car! 'set-cdr! '= '> '< '+ 'numerator 'denominator 'boolean? '* '/ '- 'remainder 'char->integer 
 				'integer->char 'cons 'list 'make-vector 'vector 'vector-length 'vector-ref 'vector-set! 
-				'make-string 'string-length 'string-ref 'string-set! 'symbol->string 'eq? 'string->symbol 'apply)
+				'make-string 'string-length 'string-ref 'string-set! 'symbol->string 'eq? 'string->symbol 'apply-helper)
 				(map cadadr
 					(filter 
 						(lambda (x) (and (list? x) (not (null? x)) (eq? 'define (car x))))

@@ -316,30 +316,19 @@
 ;(procedure? symbol->string)
 ;(procedure? vector?)
 ;(procedure? zero?)
-(define koko '#(100 200 300 #t #f #\a #\b #\x53 5/7 -7))
-koko
-(vector-set! koko 0 35)
-koko
-(vector-set! koko 1 #\y)
-koko
-(vector-set! koko 1 #t)
-koko
-(vector-set! koko 1 #f)
-koko
-
-(vector-set! koko 0 #\a)
-koko
-(vector-set! koko 6 #\a)
-koko
-(vector-set! koko 7 2/3)
-koko
-(vector-set! '#(100 200 300) 0 #\a)
-(vector-set! '#(100 200 300) 1 #\t)
-koko
-(define vectorer koko)
-vectorer
-(vector-set! vectorer 3 #\3)
-vectorer
-(define checker (lambda (x y z) (vector-set! x y z)))
-(checker vectorer 1 #\1)
-vectorer
+;(reverse '(1 2 3))
+;(+ 1 2 3)
+;(apply + '(1 2 3))
+;(apply + '(1))
+;(apply + '(1))
+(apply vector '(1 2 3 4))
+;(apply boolean? '(#t))
+;(apply number? '(5))
+;(apply (lambda (x y t) (+ x y t)) '(1 2 32/33))
+;(apply (lambda (x y t) (< x y t)) '(1 2 32/33))
+;(apply (lambda (x y t) (> x y t)) '(1 2 32/33))
+;(apply (lambda (x y t) (- x y t)) '(1 2 32/33))
+;(apply (lambda (x y t) (= x y t)) '(1 2 32/33))
+;(apply (lambda (x y t) (* x y t)) '(1 2 32/33))
+;(apply (lambda (x y t) (/ x y t)) '(1 2 32/33))
+;(apply + '(1 2 3 4 5 32/33))

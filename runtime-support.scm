@@ -577,7 +577,6 @@ CL_plus:
 B_plus:
     push rbp
     mov rbp, rsp
-
     mov r9, qword [rbp + 4*8]
     TYPE r9,
     cmp r9, T_NIL
@@ -1628,8 +1627,8 @@ L_string_symbol:
     mov rax, SOB_VOID
 "))
 
-(define apply-assembly
-    (string-append "\n;;; append ;;; \n" set-up-global-env
+(define apply-helper-assembly
+    (string-append "\n;;; apply-helper ;;; \n" set-up-global-env
     "
 CL_apply:
     mov rdi, 16
@@ -1640,9 +1639,11 @@ CL_apply:
 B_apply:
     push rbp
     mov rbp, rsp
-    mov rax, qword [rbp + 4*8]
-    mov rbx, qword [rbp + 5*8]
+    mov rax, qword [rbp + 4*8]      ; closure
+    mov rbx, qword [rbp + 5*8]      ; arg-list, reversed
     mov r8, 0
+    push SOB_NIL                    ; push nil
+    inc r8
 B_apply_loop:
     mov rcx, rbx
     cmp rcx, SOB_NIL
@@ -1653,10 +1654,7 @@ B_apply_loop:
     inc r8
     jmp B_apply_loop
 B_apply_call:
-    push rcx
-    inc r8
     push r8
-    
     mov rbx, rax            ; apply the closure
     CLOSURE_ENV rbx
     CLOSURE_CODE rax
@@ -1717,7 +1715,7 @@ L_apply:
             symbol->string-assembly
             eq?-assembly
             string->symbol-assembly
-            apply-assembly
+            apply-helper-assembly
             "\n;; End of assembly library functions \n\n")))
 
 
@@ -1725,6 +1723,16 @@ L_apply:
     '((define integer->char char->integer)
     (define rational? number?)
     (define zero? (lambda (x) (and (number? x) (= 0 x))))
+    (define reverse 
+        (lambda (lst) 
+            (if (null? lst) 
+                '() 
+                (append (reverse (cdr lst)) (list (car lst))))))
+
+    (define apply
+        (lambda (f arg-list)
+            (apply-helper f (reverse arg-list))))
+
     (define map (lambda (f  l) (if (null? l) '() (cons (f (car l)) (map f (cdr l))))))
     (define regular-append
         (lambda (l m)
