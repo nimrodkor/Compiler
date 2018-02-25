@@ -1733,7 +1733,20 @@ L_apply:
         (lambda (f arg-list)
             (apply-helper f (reverse arg-list))))
 
-    (define map (lambda (f  l) (if (null? l) '() (cons (f (car l)) (map f (cdr l))))))
+    (define map (lambda (f . s) (maplist f s)))
+
+    (define maplist
+        (lambda (f s)
+            (if (null? (car s)) 
+                '()
+                (cons (apply f (map1 car s)) (maplist f (map1 cdr s))))))
+
+    (define map1
+        (lambda (f s)
+            (if (null? s)
+                '()
+                (cons (f (car s)) (map1 f (cdr s))))))
+
     (define regular-append
         (lambda (l m)
             (if (null? l)
