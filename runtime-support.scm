@@ -493,17 +493,34 @@ B_gt:
 
     mov r8, qword [rbp + 3*8] ; get actual num of params
     sub r8, 1                 ; ignore '() param
-    mov rax, 0
+    mov r11, 0
     mov r9, qword [rbp + 4*8]
 gt_loop:
-    inc rax
-    cmp rax, r8
+    inc r11
+    cmp r11, r8
     je  gt_B_true
-    mov rbx, rax
+    mov rbx, r11
     add rbx, 4
     shl rbx, 3
     mov r10, qword [rbp + rbx]  ; rbx = (rax + 4)*8
-    cmp r9, r10
+    ; r9 = a/b, r10 = c/d, cmp a*d < b*c
+    mov r12, r9
+    NUMERATOR r12       ; r12 = a
+    mov r12, rax
+    mov rbx, r10
+    DENOMINATOR rbx     ; rbx = d
+    mul r12
+    mov r12, rax        ; r12 = a * d
+
+    mov r13, r9
+    DENOMINATOR r13
+    mov r13, rax        ; r13 = b
+    mov rbx, r10
+    NUMERATOR rbx       ; rbx = c
+    mul r13
+    mov r13, rax        ; r13 = b * c
+
+    cmp r12, r13
     jle gt_B_false
     mov r9, r10
     jmp gt_loop
@@ -537,17 +554,34 @@ B_lt:
 
     mov r8, qword [rbp + 3*8] ; get actual num of params
     sub r8, 1                 ; ignore '() param
-    mov rax, 0
+    mov r11, 0
     mov r9, qword [rbp + 4*8]
 lt_loop:
-    inc rax
-    cmp rax, r8
+    inc r11
+    cmp r11, r8
     je  gt_B_true
-    mov rbx, rax
+    mov rbx, r11
     add rbx, 4
     shl rbx, 3
     mov r10, qword [rbp + rbx]  ; rbx = (rax + 4)*8
-    cmp r9, r10
+    ; r9 = a/b, r10 = c/d, cmp a*d < b*c
+    mov r12, r9
+    NUMERATOR r12       ; r12 = a
+    mov r12, rax
+    mov rbx, r10
+    DENOMINATOR rbx     ; rbx = d
+    mul r12
+    mov r12, rax        ; r12 = a * d
+
+    mov r13, r9
+    DENOMINATOR r13
+    mov r13, rax        ; r13 = b
+    mov rbx, r10
+    NUMERATOR rbx       ; rbx = c
+    mul r13
+    mov r13, rax        ; r13 = b * c
+
+    cmp r12, r13
     jge lt_B_false
     mov r9, r10
     jmp lt_loop
@@ -612,10 +646,19 @@ plus_loop:
     mul r12
     mov r12, rax        ; r12 = b*d = solution denominator
     add r10, r11        ; r10 = solution numerator
+    cmp r12, 0
+    jge B_plus_cont
+    neg r10
+    neg r12
+B_plus_cont:
     GCD r10, r12
     mov r11, rax        ; r11 = gcd(numerator, denominator)
     mov rax, r10
-    div r11
+    cmp r10, 0
+    jge B_plus_reduce_numerator
+    mov rdx, -1
+B_plus_reduce_numerator:
+    idiv r11
     mov r13, rax        ; r13 = numerator after reduction
     mov rax, r12
     div r11
@@ -826,6 +869,10 @@ div_loop:
     mul r11
     mov r11, rax        ; r11 = b*c = solution denominator
     cmp r11, 0
+    jge B_div_cont
+    neg r10
+    neg r11
+B_div_cont:
     GCD r10, r11
     mov r12, rax        ; r12 = gcd(numerator, denominator)
     mov rax, r10
@@ -949,10 +996,20 @@ sub_loop:
     mul r12
     mov r12, rax        ; r12 = b*d = solution denominator
     sub r10, r11        ; r10 = solution numerator
+
+    cmp r12, 0
+    jge B_sub_cont
+    neg r10
+    neg r12
+B_sub_cont:
     GCD r10, r12
     mov r11, rax        ; r11 = gcd(numerator, denominator)
     mov rax, r10
-    div r11
+    cmp r10, 0
+    jge B_sub_reduce_numerator
+    mov rdx, -1
+B_sub_reduce_numerator:
+    idiv r11
     mov r13, rax        ; r13 = numerator after reduction
     mov rax, r12
     div r11
@@ -1005,10 +1062,17 @@ B_remainder:
     mov r13, qword [rbp + 5*8]
     DATA r13
     ; r12 = to-divide (integer), r13 = divisor (integer)
+    ABS r13
     mov rax, r12
     mov rbx, r13
+    cmp r12, 0
+    jge B_remainder_div_pos
+    mov rdx, -1
+    jmp B_remainder_div
+B_remainder_div_pos:
     mov rdx, 0
-    div rbx
+B_remainder_div:
+    idiv rbx
     sal rdx, TYPE_BITS
     or  rdx, T_INTEGER
     mov rax, rdx

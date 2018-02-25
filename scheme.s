@@ -157,10 +157,9 @@ mov rax, qword [rax]
 %endmacro
 
 %macro ABS 1
-	mov rax, %1
-	cmp rax, 0
+	cmp %1, 0
 	jge %%abs_end
-	neg rax
+	neg %1
 %%abs_end:
 %endmacro
 
